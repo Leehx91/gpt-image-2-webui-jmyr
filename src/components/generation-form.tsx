@@ -183,8 +183,8 @@ export function GenerationForm({
 
     return (
         <Card className='flex h-full w-full flex-col overflow-hidden rounded-lg border border-white/10 bg-black'>
-            <CardHeader className='flex items-start justify-between border-b border-white/10 pb-4'>
-                <div>
+            <CardHeader className='flex flex-col gap-3 border-b border-white/10 pb-4 sm:flex-row sm:items-start sm:justify-between'>
+                <div className='min-w-0'>
                     <div className='flex items-center'>
                         <CardTitle className='py-1 text-lg font-medium text-white'>
                             {t('form.generate.title')}

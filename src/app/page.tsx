@@ -10,7 +10,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { useAppSettings } from '@/lib/app-settings';
+import { supportedImageModelIds, useAppSettings } from '@/lib/app-settings';
 import { calculateApiCost, formatUsdCny, type CostDetails, type GptImageModel } from '@/lib/cost-utils';
 import { db, type ImageRecord } from '@/lib/db';
 import { useI18n, type LanguagePreference } from '@/lib/i18n';
@@ -23,10 +23,8 @@ import {
     ExternalLink,
     Eye,
     EyeOff,
-    Globe2,
     KeyRound,
     Languages,
-    Loader2,
     Moon,
     Sun
 } from 'lucide-react';
@@ -112,11 +110,6 @@ type ImageApiResult = {
     error?: string;
 };
 
-type ModelsApiResult = {
-    models?: string[];
-    error?: string;
-};
-
 type ApiResponseInfo = {
     status: 'loading' | 'success' | 'error';
     endpoint: string;
@@ -156,58 +149,11 @@ function getTokenConsoleUrl(baseUrl: string): string | null {
     }
 }
 
-function normalizeModelOptions(model: string, existingModels: string[]): string[] {
-    const seen = new Set<string>();
-    const nextModels: string[] = [];
-
-    for (const rawModel of [model, ...existingModels]) {
-        const trimmedModel = rawModel.trim();
-        if (!trimmedModel || seen.has(trimmedModel)) continue;
-
-        seen.add(trimmedModel);
-        nextModels.push(trimmedModel);
-    }
-
-    const withoutIncompletePrefixes = removeIncompletePrefixModels(nextModels);
-
-    return withoutIncompletePrefixes.length > 0 ? withoutIncompletePrefixes : ['gpt-image-2'];
-}
-
-function removeIncompletePrefixModels(models: string[]): string[] {
-    return models.filter((model) => {
-        const looksIncomplete = model.endsWith('-') || !/\d/.test(model);
-        if (!looksIncomplete) return true;
-
-        return !models.some((otherModel) => otherModel !== model && otherModel.startsWith(model));
-    });
-}
-
-function mergeModelOptions(groups: string[][]): string[] {
-    const seen = new Set<string>();
-    const options: string[] = [];
-
-    for (const group of groups) {
-        for (const rawModel of removeIncompletePrefixModels(group)) {
-            const model = rawModel.trim();
-            if (!model || seen.has(model)) continue;
-
-            seen.add(model);
-            options.push(model);
-        }
-    }
-
-    return options.length > 0 ? options : ['gpt-image-2'];
-}
-
 function formatApiDuration(durationMs?: number): string {
     if (durationMs === undefined) return '-';
     if (durationMs < 1000) return `${durationMs}ms`;
 
     return `${(durationMs / 1000).toFixed(1)}s`;
-}
-
-function formatContentType(contentType?: string | null): string {
-    return contentType?.split(';')[0] || '-';
 }
 
 function getServerImagePath(filename: string): string {
@@ -247,10 +193,6 @@ export default function HomePage() {
     const [baseUrlDraft, setBaseUrlDraft] = React.useState(settings.baseUrl);
     const [apiKeyDraft, setApiKeyDraft] = React.useState(settings.apiKey);
     const [modelDraft, setModelDraft] = React.useState(settings.models[0] ?? 'gpt-image-2');
-    const [remoteModelOptions, setRemoteModelOptions] = React.useState<string[]>([]);
-    const [isModelMenuOpen, setIsModelMenuOpen] = React.useState(false);
-    const [isFetchingModels, setIsFetchingModels] = React.useState(false);
-    const [modelFetchError, setModelFetchError] = React.useState<string | null>(null);
     const [showApiKey, setShowApiKey] = React.useState(false);
     const [isLoading, setIsLoading] = React.useState(false);
     const [isSendingToEdit, setIsSendingToEdit] = React.useState(false);
@@ -266,7 +208,6 @@ export default function HomePage() {
     const [imageSrcByFilename, setImageSrcByFilename] = React.useState<Record<string, string>>({});
     const [isInitialLoad, setIsInitialLoad] = React.useState(true);
     const blobUrlCacheRef = React.useRef<Map<string, string>>(new Map());
-    const modelMenuRef = React.useRef<HTMLDivElement>(null);
     const [isPasswordDialogOpen, setIsPasswordDialogOpen] = React.useState(false);
     const [passwordDialogContext, setPasswordDialogContext] = React.useState<'initial' | 'retry'>('initial');
     const [lastApiCallArgs, setLastApiCallArgs] = React.useState<[GenerationFormData | EditingFormData] | null>(null);
@@ -294,19 +235,11 @@ export default function HomePage() {
     const [editDrawnPoints, setEditDrawnPoints] = React.useState<DrawnPoint[]>([]);
     const [editMaskPreviewUrl, setEditMaskPreviewUrl] = React.useState<string | null>(null);
 
-    const selectedModel = (modelDraft.trim() || settings.models[0] || 'gpt-image-2') as GptImageModel;
-    const combinedModelOptions = React.useMemo(
-        () => mergeModelOptions([remoteModelOptions, modelOptions]),
-        [modelOptions, remoteModelOptions]
+    const imageModelOptions = React.useMemo(
+        () => (modelOptions.length > 0 ? modelOptions : supportedImageModelIds),
+        [modelOptions]
     );
-    const filteredModelOptions = React.useMemo(() => {
-        const query = modelDraft.trim().toLowerCase();
-        const filteredOptions = query
-            ? combinedModelOptions.filter((model) => model.toLowerCase().includes(query))
-            : combinedModelOptions;
-
-        return filteredOptions.slice(0, 50);
-    }, [combinedModelOptions, modelDraft]);
+    const selectedModel = (imageModelOptions.includes(modelDraft.trim()) ? modelDraft.trim() : imageModelOptions[0]) as GptImageModel;
     const [genPrompt, setGenPrompt] = React.useState('');
     const [genN, setGenN] = React.useState([1]);
     const [genSize, setGenSize] = React.useState<GenerationFormData['size']>('square');
@@ -355,31 +288,13 @@ export default function HomePage() {
         });
     };
 
-    const handleModelChange = (value: string) => {
-        setModelDraft(value);
-    };
-
-    const saveModelChoice = React.useCallback(
-        (value: string) => {
-            if (!value.trim()) return;
-
-            saveSettings({
-                ...settings,
-                baseUrl: baseUrlDraft,
-                apiKey: apiKeyDraft,
-                models: normalizeModelOptions(value, settings.models)
-            });
-        },
-        [apiKeyDraft, baseUrlDraft, saveSettings, settings]
-    );
-
     const handleModelSelect = (value: string) => {
         setModelDraft(value);
         saveSettings({
             ...settings,
             baseUrl: baseUrlDraft,
             apiKey: apiKeyDraft,
-            models: normalizeModelOptions(value, settings.models)
+            models: [value]
         });
     };
 
@@ -387,58 +302,6 @@ export default function HomePage() {
         () => getTokenConsoleUrl(baseUrlDraft || settings.baseUrl),
         [baseUrlDraft, settings.baseUrl]
     );
-
-    const fetchModelOptions = React.useCallback(async () => {
-        if (!apiKeyDraft.trim()) {
-            setRemoteModelOptions([]);
-            setModelFetchError(null);
-            return;
-        }
-
-        if (isPasswordRequiredByBackend && !clientPasswordHash) {
-            setModelFetchError(t('page.passwordMissing'));
-            return;
-        }
-
-        setIsFetchingModels(true);
-        setModelFetchError(null);
-
-        try {
-            const response = await fetch('/api/models', {
-                method: 'POST',
-                cache: 'no-store',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                    apiKey: apiKeyDraft.trim() || undefined,
-                    baseUrl: baseUrlDraft.trim() || undefined,
-                    ...(isPasswordRequiredByBackend && clientPasswordHash ? { passwordHash: clientPasswordHash } : {})
-                })
-            });
-            const result: ModelsApiResult = await response.json();
-
-            if (!response.ok) {
-                throw new Error(result.error || t('page.apiRequestFailed', { status: response.status }));
-            }
-
-            setRemoteModelOptions(Array.isArray(result.models) ? result.models : []);
-        } catch (error) {
-            setRemoteModelOptions([]);
-            setModelFetchError(error instanceof Error ? error.message : t('settings.modelsFetchFailed'));
-        } finally {
-            setIsFetchingModels(false);
-        }
-    }, [apiKeyDraft, baseUrlDraft, clientPasswordHash, isPasswordRequiredByBackend, t]);
-
-    React.useEffect(() => {
-        const handlePointerDown = (event: PointerEvent) => {
-            if (!modelMenuRef.current?.contains(event.target as Node)) {
-                setIsModelMenuOpen(false);
-            }
-        };
-
-        document.addEventListener('pointerdown', handlePointerDown);
-        return () => document.removeEventListener('pointerdown', handlePointerDown);
-    }, []);
 
     React.useEffect(() => {
         if (!isLoading || activeRequestStartedAt === null) {
@@ -1520,18 +1383,9 @@ export default function HomePage() {
     const apiInfoRows: Array<[string, string]> = apiResponseInfo
         ? [
               [t('apiInfo.status'), apiInfoStatusLabel],
-              [
-                  t('apiInfo.httpStatus'),
-                  apiResponseInfo.httpStatus ? `${apiResponseInfo.httpStatus}` : '-'
-              ],
               [t('apiInfo.duration'), apiInfoDuration],
-              [t('apiInfo.responseType'), apiResponseInfo.responseKind || formatContentType(apiResponseInfo.contentType)],
-              [t('apiInfo.endpoint'), `${apiResponseInfo.method} ${apiResponseInfo.endpoint}`],
               [t('common.model'), apiResponseInfo.model],
               [t('common.size'), apiResponseInfo.size || '-'],
-              [t('history.imageCount'), `${apiResponseInfo.n}`],
-              [t('apiInfo.streaming'), apiResponseInfo.stream ? t('common.yes') : t('common.no')],
-              [t('apiInfo.storage'), apiResponseInfo.storageMode],
               [
                   t('apiInfo.imageCount'),
                   apiResponseInfo.imageCount === undefined ? '-' : `${apiResponseInfo.imageCount}`
@@ -1543,20 +1397,8 @@ export default function HomePage() {
           ]
         : [];
 
-    if (apiResponseInfo?.stream) {
-        apiInfoRows.push(
-            [
-                t('apiInfo.partialImages'),
-                `${apiResponseInfo.streamingStats?.partialImages ?? 0}${
-                    apiResponseInfo.partialImages ? ` / ${apiResponseInfo.partialImages}` : ''
-                }`
-            ],
-            [t('apiInfo.completedImages'), `${apiResponseInfo.streamingStats?.completedImages ?? 0}`]
-        );
-    }
-
     return (
-        <main className='min-h-screen bg-[#111111] p-3 text-white md:p-4 lg:h-screen lg:overflow-hidden'>
+        <main className='min-h-screen bg-[#101010] p-3 text-white md:p-4 lg:h-screen lg:overflow-hidden'>
             <PasswordDialog
                 isOpen={isPasswordDialogOpen}
                 onOpenChange={setIsPasswordDialogOpen}
@@ -1568,25 +1410,25 @@ export default function HomePage() {
                         : t('page.setPasswordDescription')
                 }
             />
-            <div className='flex min-h-screen w-full flex-col gap-3 lg:h-full lg:min-h-0'>
+            <div className='mx-auto flex min-h-screen w-full max-w-[1760px] flex-col gap-3 lg:h-full lg:min-h-0'>
                 <header className='shrink-0 rounded-lg border border-[#2b2b2b] bg-[#151515]/95 px-4 py-3 shadow-sm'>
-                    <div className='flex flex-col gap-3'>
-                        <div className='flex flex-col gap-3 md:flex-row md:items-center md:justify-between'>
+                    <div className='flex flex-col gap-4'>
+                        <div className='flex flex-col gap-3 xl:flex-row xl:items-center xl:justify-between'>
                             <div className='min-w-0'>
                                 <p className='text-xs font-medium tracking-[0.16em] text-white/45 uppercase'>
                                     {t('home.kicker')}
                                 </p>
-                                <h1 className='mt-0.5 truncate text-2xl font-semibold text-white'>{t('home.title')}</h1>
+                                <h1 className='mt-0.5 text-2xl font-semibold text-white'>{t('home.title')}</h1>
                             </div>
 
-                            <div className='flex shrink-0 items-center gap-2 md:justify-end'>
+                            <div className='flex shrink-0 items-center gap-2 xl:justify-end'>
                                 <Languages className='h-4 w-4 text-white/45' />
                                 <Select
                                     value={languagePreference}
                                     onValueChange={(value) => setLanguagePreference(value as LanguagePreference)}>
                                     <SelectTrigger
                                         aria-label={t('settings.languageAria')}
-                                        className='h-8 w-[132px] border-white/20 bg-black text-sm text-white focus:border-white/50 focus:ring-white/50'>
+                                        className='h-9 w-[132px] border-white/20 bg-black text-sm text-white focus:border-white/50 focus:ring-white/50'>
                                         <SelectValue />
                                     </SelectTrigger>
                                     <SelectContent className='border-white/20 bg-black text-white'>
@@ -1606,7 +1448,7 @@ export default function HomePage() {
                                     variant='outline'
                                     size='icon'
                                     onClick={handleThemeToggle}
-                                    className='h-8 w-8 border-white/20 text-white/75 hover:bg-white/10 hover:text-white'
+                                    className='h-9 w-9 border-white/20 text-white/75 hover:bg-white/10 hover:text-white'
                                     aria-label={t('home.toggleTheme')}>
                                     {currentTheme === 'dark' ? (
                                         <Moon className='h-4 w-4' />
@@ -1617,122 +1459,29 @@ export default function HomePage() {
                             </div>
                         </div>
 
-                        <div className='grid gap-2 md:grid-cols-2 xl:grid-cols-[minmax(220px,0.85fr)_minmax(220px,0.85fr)_minmax(340px,1.3fr)] xl:items-start'>
+                        <div className='grid gap-3 lg:grid-cols-[minmax(320px,1fr)_minmax(220px,320px)] xl:grid-cols-[minmax(420px,1fr)_minmax(240px,320px)] xl:items-end'>
                             <div className='min-w-0'>
-                                <Label className='mb-1.5 flex items-center gap-1.5 text-xs font-medium text-white/70'>
-                                    <Globe2 className='h-3.5 w-3.5' />
-                                    {t('settings.baseUrl')}
-                                </Label>
-                                <div className='flex h-9 min-w-0 items-center rounded-md border border-white/15 bg-[#111111] px-3 text-sm text-white/80'>
-                                    <span className='truncate'>{baseUrlDraft}</span>
-                                </div>
-                            </div>
-
-                            <div ref={modelMenuRef} className='relative min-w-0'>
-                                <Label
-                                    htmlFor='home-model'
-                                    className='mb-1.5 flex items-center gap-1.5 text-xs font-medium text-white/70'>
-                                    <Cpu className='h-3.5 w-3.5' />
-                                    {t('common.model')}
-                                </Label>
-                                <div className='flex gap-2'>
-                                    <Input
-                                        id='home-model'
-                                        value={modelDraft}
-                                        onChange={(event) => {
-                                            handleModelChange(event.target.value);
-                                            setIsModelMenuOpen(true);
-                                        }}
-                                        onFocus={() => setIsModelMenuOpen(true)}
-                                        onBlur={(event) => {
-                                            const nextFocusedElement = event.relatedTarget;
-                                            if (
-                                                nextFocusedElement &&
-                                                modelMenuRef.current?.contains(nextFocusedElement)
-                                            ) {
-                                                return;
-                                            }
-
-                                            saveModelChoice(modelDraft);
-                                        }}
-                                        placeholder={t('settings.modelPlaceholder')}
-                                        className='h-9 border-white/20 bg-black text-white placeholder:text-white/35 focus:border-white/50 focus:ring-white/50'
-                                    />
-                                    <Button
-                                        type='button'
-                                        variant='outline'
-                                        size='icon'
-                                        onClick={() => {
-                                            setIsModelMenuOpen((current) => !current);
-                                            fetchModelOptions();
-                                        }}
-                                        className='h-9 w-9 border-white/20 text-white/75 hover:bg-white/10 hover:text-white'
-                                        aria-label={t('settings.models')}>
-                                        {isFetchingModels ? (
-                                            <Loader2 className='h-4 w-4 animate-spin' />
-                                        ) : (
-                                            <ChevronDown className='h-4 w-4' />
-                                        )}
-                                    </Button>
-                                </div>
-                                {isModelMenuOpen && (
-                                    <div className='absolute z-50 mt-1 max-h-56 w-full overflow-y-auto rounded-md border border-white/20 bg-black p-1 text-sm text-white shadow-lg'>
-                                        {isFetchingModels && (
-                                            <div className='flex items-center gap-2 px-2 py-2 text-xs text-white/50'>
-                                                <Loader2 className='h-3.5 w-3.5 animate-spin' />
-                                                {t('settings.modelsLoading')}
-                                            </div>
-                                        )}
-                                        {!isFetchingModels &&
-                                            filteredModelOptions.map((model) => (
-                                                <button
-                                                    key={model}
-                                                    type='button'
-                                                    onMouseDown={(event) => event.preventDefault()}
-                                                    onClick={() => {
-                                                        handleModelSelect(model);
-                                                        setIsModelMenuOpen(false);
-                                                    }}
-                                                    className='block w-full rounded px-2 py-1.5 text-left text-white/80 hover:bg-white/10 hover:text-white'>
-                                                    {model}
-                                                </button>
-                                            ))}
-                                        {!isFetchingModels && filteredModelOptions.length === 0 && (
-                                            <div className='px-2 py-2 text-xs text-white/45'>
-                                                {modelFetchError || t('settings.noModelsFound')}
-                                            </div>
-                                        )}
-                                        {!isFetchingModels && filteredModelOptions.length > 0 && modelFetchError && (
-                                            <div className='border-t border-white/10 px-2 py-1.5 text-xs text-yellow-300/80'>
-                                                {modelFetchError}
-                                            </div>
-                                        )}
-                                    </div>
-                                )}
-                            </div>
-
-                            <div className='min-w-0 md:col-span-2 xl:col-span-1'>
                                 <Label
                                     htmlFor='home-api-key'
                                     className='mb-1.5 flex items-center gap-1.5 text-xs font-medium text-white/70'>
                                     <KeyRound className='h-3.5 w-3.5' />
                                     {t('settings.apiKey')}
                                 </Label>
-                                <div className='flex gap-2'>
+                                <div className='grid grid-cols-[minmax(0,1fr)_auto] gap-2 sm:grid-cols-[minmax(0,1fr)_auto_auto]'>
                                     <Input
                                         id='home-api-key'
                                         type={showApiKey ? 'text' : 'password'}
                                         value={apiKeyDraft}
                                         onChange={(event) => handleApiKeyChange(event.target.value)}
                                         placeholder={t('settings.apiKeyPlaceholder')}
-                                        className='h-9 border-white/20 bg-black text-white placeholder:text-white/35 focus:border-white/50 focus:ring-white/50'
+                                        className='h-10 border-white/20 bg-black text-white placeholder:text-white/35 focus:border-white/50 focus:ring-white/50'
                                     />
                                     <Button
                                         type='button'
                                         variant='outline'
                                         size='icon'
                                         onClick={() => setShowApiKey((current) => !current)}
-                                        className='h-9 w-9 border-white/20 text-white/75 hover:bg-white/10 hover:text-white'
+                                        className='h-10 w-10 border-white/20 text-white/75 hover:bg-white/10 hover:text-white'
                                         aria-label={showApiKey ? t('home.hideApiKey') : t('home.showApiKey')}>
                                         {showApiKey ? <EyeOff className='h-4 w-4' /> : <Eye className='h-4 w-4' />}
                                     </Button>
@@ -1741,7 +1490,7 @@ export default function HomePage() {
                                         type='button'
                                         variant='outline'
                                         disabled={!tokenConsoleUrl}
-                                        className='h-9 shrink-0 border-white/20 px-2.5 text-xs text-white/75 hover:bg-white/10 hover:text-white'>
+                                        className='col-span-2 h-10 shrink-0 border-white/20 px-3 text-sm text-white/75 hover:bg-white/10 hover:text-white sm:col-span-1'>
                                         {tokenConsoleUrl ? (
                                             <a
                                                 href={tokenConsoleUrl}
@@ -1760,15 +1509,38 @@ export default function HomePage() {
                                     </Button>
                                 </div>
                             </div>
+
+                            <div className='min-w-0'>
+                                <Label
+                                    htmlFor='home-model'
+                                    className='mb-1.5 flex items-center gap-1.5 text-xs font-medium text-white/70'>
+                                    <Cpu className='h-3.5 w-3.5' />
+                                    {t('common.model')}
+                                </Label>
+                                <Select value={selectedModel} onValueChange={handleModelSelect}>
+                                    <SelectTrigger
+                                        id='home-model'
+                                        className='h-10 border-white/20 bg-black text-sm text-white focus:border-white/50 focus:ring-white/50'>
+                                        <SelectValue />
+                                    </SelectTrigger>
+                                    <SelectContent className='border-white/20 bg-black text-white'>
+                                        {imageModelOptions.map((model) => (
+                                            <SelectItem key={model} value={model} className='focus:bg-white/10'>
+                                                {model}
+                                            </SelectItem>
+                                        ))}
+                                    </SelectContent>
+                                </Select>
+                            </div>
                         </div>
 
-                        <div className='flex flex-wrap items-center gap-x-4 gap-y-1 border-t border-white/10 pt-2'>
+                        <div className='flex flex-wrap items-center gap-x-5 gap-y-1 border-t border-white/10 pt-2'>
                             <p className='flex min-h-4 items-center gap-1.5 text-xs text-white/45'>
-                                {baseUrlDraft.trim() && <CheckCircle2 className='h-3.5 w-3.5 text-green-400' />}
+                                <CheckCircle2 className='h-3.5 w-3.5 text-green-400' />
                                 {t('settings.baseUrlHelp')}
                             </p>
                             <p className='flex min-h-4 items-center gap-1.5 text-xs text-white/45'>
-                                {selectedModel.trim() && <CheckCircle2 className='h-3.5 w-3.5 text-green-400' />}
+                                <CheckCircle2 className='h-3.5 w-3.5 text-green-400' />
                                 {t('home.modelHelp')}
                             </p>
                             <p className='flex min-h-4 items-center gap-1.5 text-xs text-white/45'>
@@ -1779,7 +1551,7 @@ export default function HomePage() {
                     </div>
                 </header>
 
-                <div className='grid min-h-0 flex-1 grid-cols-1 gap-3 lg:grid-cols-[minmax(340px,420px)_minmax(300px,1fr)_minmax(280px,320px)] lg:overflow-hidden xl:grid-cols-[minmax(420px,520px)_minmax(420px,1fr)_minmax(320px,360px)] 2xl:grid-cols-[minmax(500px,620px)_minmax(480px,1fr)_minmax(360px,400px)]'>
+                <div className='grid min-h-0 flex-1 grid-cols-1 gap-3 lg:grid-cols-[minmax(360px,500px)_minmax(0,1fr)] lg:overflow-hidden 2xl:grid-cols-[minmax(420px,560px)_minmax(0,1fr)]'>
                     <section className='relative flex min-h-[620px] flex-col lg:min-h-0 lg:overflow-hidden'>
                         <div className={mode === 'generate' ? 'block h-full w-full' : 'hidden'}>
                             <GenerationForm
@@ -1858,41 +1630,53 @@ export default function HomePage() {
                         </div>
                     </section>
 
-                    <section className='flex min-h-[520px] flex-col lg:min-h-0 lg:overflow-hidden'>
-                        {error && (
-                            <Alert variant='destructive' className='mb-3 border-red-500/50 bg-red-900/20 text-red-300'>
-                                <AlertTitle className='text-red-200'>{t('common.error')}</AlertTitle>
-                                <AlertDescription>{error}</AlertDescription>
-                            </Alert>
-                        )}
-                        <div className='mb-3 shrink-0 rounded-lg border border-white/10 bg-black/95'>
-                            <button
-                                type='button'
-                                onClick={() => setShowApiResponseInfo((current) => !current)}
-                                className='flex w-full items-center justify-between gap-3 px-3 py-2 text-left text-sm text-white/80 hover:bg-white/5'>
-                                <span className='flex min-w-0 items-center gap-2'>
-                                    <ChevronDown
-                                        className={`h-4 w-4 shrink-0 transition-transform ${
-                                            showApiResponseInfo ? 'rotate-180' : ''
-                                        }`}
-                                    />
-                                    <span className='font-medium'>{t('apiInfo.toggle')}</span>
-                                    {apiResponseInfo && (
-                                        <span
-                                            className={`rounded-full border px-2 py-0.5 text-[11px] ${apiInfoStatusClass}`}>
-                                            {apiInfoStatusLabel}
+                    <section className='grid min-h-[760px] grid-rows-[minmax(420px,1fr)_minmax(300px,0.55fr)] gap-3 lg:min-h-0 lg:overflow-hidden xl:grid-cols-[minmax(0,1fr)_minmax(300px,360px)] xl:grid-rows-none'>
+                        <div className='flex min-h-[520px] flex-col lg:min-h-0 lg:overflow-hidden'>
+                            {error && (
+                                <Alert
+                                    variant='destructive'
+                                    className='mb-3 border-red-500/50 bg-red-900/20 text-red-300'>
+                                    <AlertTitle className='text-red-200'>{t('common.error')}</AlertTitle>
+                                    <AlertDescription>{error}</AlertDescription>
+                                </Alert>
+                            )}
+                            <div className='min-h-0 flex-1'>
+                                <ImageOutput
+                                    imageBatch={latestImageBatch}
+                                    promptText={latestBatchPrompt}
+                                    viewMode={imageOutputView}
+                                    onViewChange={setImageOutputView}
+                                    altText={t('output.generatedAlt')}
+                                    isLoading={isLoading || isSendingToEdit}
+                                    elapsedSeconds={elapsedSeconds}
+                                    onSendToEdit={handleSendToEdit}
+                                    currentMode={mode}
+                                    baseImagePreviewUrl={editSourceImagePreviewUrls[0] || null}
+                                />
+                            </div>
+                            {apiResponseInfo && (
+                                <div className='mt-3 shrink-0 rounded-lg border border-white/10 bg-black/95'>
+                                    <button
+                                        type='button'
+                                        onClick={() => setShowApiResponseInfo((current) => !current)}
+                                        className='flex w-full items-center justify-between gap-3 px-3 py-2 text-left text-sm text-white/80 hover:bg-white/5'>
+                                        <span className='flex min-w-0 items-center gap-2'>
+                                            <ChevronDown
+                                                className={`h-4 w-4 shrink-0 transition-transform ${
+                                                    showApiResponseInfo ? 'rotate-180' : ''
+                                                }`}
+                                            />
+                                            <span className='font-medium'>{t('apiInfo.toggle')}</span>
+                                            <span
+                                                className={`rounded-full border px-2 py-0.5 text-[11px] ${apiInfoStatusClass}`}>
+                                                {apiInfoStatusLabel}
+                                            </span>
                                         </span>
-                                    )}
-                                </span>
-                                <span className='shrink-0 text-xs text-white/45'>{apiInfoDuration}</span>
-                            </button>
+                                        <span className='shrink-0 text-xs text-white/45'>{apiInfoDuration}</span>
+                                    </button>
 
-                            {showApiResponseInfo && (
-                                <div className='border-t border-white/10 p-3'>
-                                    {!apiResponseInfo ? (
-                                        <p className='text-xs text-white/45'>{t('apiInfo.empty')}</p>
-                                    ) : (
-                                        <div className='space-y-3'>
+                                    {showApiResponseInfo && (
+                                        <div className='border-t border-white/10 p-3'>
                                             <div className='grid gap-2 text-xs sm:grid-cols-2 xl:grid-cols-3'>
                                                 {apiInfoRows.map(([label, value]) => (
                                                     <div
@@ -1905,22 +1689,8 @@ export default function HomePage() {
                                                     </div>
                                                 ))}
                                             </div>
-                                            {apiResponseInfo.filenames && apiResponseInfo.filenames.length > 0 && (
-                                                <div className='rounded-md border border-white/10 bg-white/[0.035] px-2 py-1.5 text-xs'>
-                                                    <p className='mb-1 text-white/40'>{t('apiInfo.files')}</p>
-                                                    <div className='flex flex-wrap gap-1.5'>
-                                                        {apiResponseInfo.filenames.map((filename) => (
-                                                            <span
-                                                                key={filename}
-                                                                className='rounded border border-white/10 px-1.5 py-0.5 font-mono text-[11px] text-white/70'>
-                                                                {filename}
-                                                            </span>
-                                                        ))}
-                                                    </div>
-                                                </div>
-                                            )}
                                             {apiResponseInfo.error && (
-                                                <div className='rounded-md border border-red-400/30 bg-red-500/10 px-2 py-1.5 text-xs text-red-200'>
+                                                <div className='mt-2 rounded-md border border-red-400/30 bg-red-500/10 px-2 py-1.5 text-xs text-red-200'>
                                                     {apiResponseInfo.error}
                                                 </div>
                                             )}
@@ -1929,35 +1699,21 @@ export default function HomePage() {
                                 </div>
                             )}
                         </div>
-                        <div className='min-h-0 flex-1'>
-                            <ImageOutput
-                                imageBatch={latestImageBatch}
-                                promptText={latestBatchPrompt}
-                                viewMode={imageOutputView}
-                                onViewChange={setImageOutputView}
-                                altText={t('output.generatedAlt')}
-                                isLoading={isLoading || isSendingToEdit}
-                                elapsedSeconds={elapsedSeconds}
-                                onSendToEdit={handleSendToEdit}
-                                currentMode={mode}
-                                baseImagePreviewUrl={editSourceImagePreviewUrls[0] || null}
-                            />
-                        </div>
-                    </section>
 
-                    <section className='min-h-[480px] lg:min-h-0 lg:overflow-hidden'>
-                        <HistoryPanel
-                            history={history}
-                            onSelectImage={handleHistorySelect}
-                            onClearHistory={handleClearHistory}
-                            getImageSrc={getStoredImageSrc}
-                            onDeleteItemRequest={handleRequestDeleteItem}
-                            itemPendingDeleteConfirmation={itemToDeleteConfirm}
-                            onConfirmDeletion={handleConfirmDeletion}
-                            onCancelDeletion={handleCancelDeletion}
-                            deletePreferenceDialogValue={dialogCheckboxStateSkipConfirm}
-                            onDeletePreferenceDialogChange={setDialogCheckboxStateSkipConfirm}
-                        />
+                        <section className='min-h-[300px] lg:min-h-0 lg:overflow-hidden'>
+                            <HistoryPanel
+                                history={history}
+                                onSelectImage={handleHistorySelect}
+                                onClearHistory={handleClearHistory}
+                                getImageSrc={getStoredImageSrc}
+                                onDeleteItemRequest={handleRequestDeleteItem}
+                                itemPendingDeleteConfirmation={itemToDeleteConfirm}
+                                onConfirmDeletion={handleConfirmDeletion}
+                                onCancelDeletion={handleCancelDeletion}
+                                deletePreferenceDialogValue={dialogCheckboxStateSkipConfirm}
+                                onDeletePreferenceDialogChange={setDialogCheckboxStateSkipConfirm}
+                            />
+                        </section>
                     </section>
                 </div>
             </div>

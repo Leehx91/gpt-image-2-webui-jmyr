@@ -2,7 +2,8 @@
 
 import * as React from 'react';
 
-export const defaultModelIds = ['gpt-image-2'];
+export const supportedImageModelIds = ['gpt-image-2'];
+export const defaultModelIds = supportedImageModelIds;
 export const defaultBaseUrl = 'https://www.jmyr.net/v1';
 const legacyDefaultModelIds = ['gpt-image-2', 'gpt-image-1.5', 'gpt-image-1', 'gpt-image-1-mini'];
 
@@ -35,7 +36,7 @@ function normalizeModels(models: string[]): string[] {
 
     for (const model of models) {
         const trimmedModel = model.trim();
-        if (!trimmedModel || seen.has(trimmedModel)) continue;
+        if (!trimmedModel || seen.has(trimmedModel) || !supportedImageModelIds.includes(trimmedModel)) continue;
 
         seen.add(trimmedModel);
         normalized.push(trimmedModel);

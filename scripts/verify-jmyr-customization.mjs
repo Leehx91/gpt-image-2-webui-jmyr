@@ -18,7 +18,18 @@ test('JmyR branding is visible in metadata and home copy', () => {
 
   assert.match(layout, /JmyR/);
   assert.match(i18n, /JmyR/);
-  assert.match(i18n, /图片生成工作台/);
+  assert.match(i18n, /JmyR 图片工作台/);
+  assert.match(i18n, /文生图/);
+  assert.match(i18n, /图生图/);
+});
+
+test('JmyR image workspace only exposes supported image models', () => {
+  const appSettings = read('src/lib/app-settings.tsx');
+  const page = read('src/app/page.tsx');
+
+  assert.match(appSettings, /supportedImageModelIds = \['gpt-image-2'\]/);
+  assert.match(page, /supportedImageModelIds/);
+  assert.doesNotMatch(page, /api\/models/);
 });
 
 test('image API route avoids logging prompts, request params, or uploaded filenames', () => {
