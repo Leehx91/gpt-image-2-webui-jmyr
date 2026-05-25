@@ -80,6 +80,7 @@ test('send-to-edit can append sources without revoking existing previews', () =>
 test('JmyR image workspace exposes clear size tiers and hides moderation controls', () => {
   const page = read('src/app/page.tsx');
   const sizeUtils = read('src/lib/size-utils.ts');
+  const sizePicker = read('src/components/size-preset-picker.tsx');
   const generationForm = read('src/components/generation-form.tsx');
   const i18n = read('src/lib/i18n.tsx');
 
@@ -91,6 +92,11 @@ test('JmyR image workspace exposes clear size tiers and hides moderation control
   assert.match(i18n, /1K 标准/);
   assert.match(i18n, /2K 高清/);
   assert.match(i18n, /4K 超清/);
+  assert.match(i18n, /1\. 选择清晰度/);
+  assert.match(i18n, /2\. 选择画幅/);
+  assert.match(sizePicker, /form\.sizeTierGroup/);
+  assert.match(sizePicker, /form\.sizeRatioGroup/);
+  assert.doesNotMatch(sizePicker, /SIZE_PRESET_OPTIONS\.map/);
   assert.match(i18n, /蒙版用于局部修图/);
   assert.match(generationForm, /moderation: 'auto'/);
   assert.doesNotMatch(generationForm, /common\.moderationLevel/);
