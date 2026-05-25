@@ -109,7 +109,7 @@ export function ImageOutput({
     };
 
     return (
-        <div className='flex h-full min-h-[300px] w-full flex-col items-center justify-between gap-4 overflow-hidden rounded-lg border border-white/20 bg-black p-4'>
+        <div className='jmyr-card flex h-full min-h-[300px] w-full flex-col items-center justify-between gap-4 overflow-hidden rounded-lg p-4'>
             <ImagePreviewDialog
                 image={previewImage}
                 open={!!previewImage}
@@ -292,7 +292,7 @@ export function ImageOutput({
 
             <div className='flex h-10 w-full shrink-0 items-center justify-center gap-4'>
                 {showCarousel && (
-                    <div className='flex items-center gap-1.5 rounded-md border border-white/10 bg-neutral-800/50 p-1'>
+                    <div className='jmyr-control flex items-center gap-1.5 rounded-md p-1'>
                         <Button
                             variant='ghost'
                             size='icon'

@@ -110,13 +110,13 @@ const RadioItemWithIcon = ({
         <RadioGroupItem
             value={value}
             id={id}
-            className='border-white/40 text-white data-[state=checked]:border-white data-[state=checked]:text-white'
-        />
-        <Label htmlFor={id} className='flex cursor-pointer items-center gap-2 text-base text-white/80'>
-            <Icon className='h-5 w-5 text-white/60' />
-            {label}
-        </Label>
-    </div>
+        className='border-white/35 text-white data-[state=checked]:border-white data-[state=checked]:text-white'
+    />
+    <Label htmlFor={id} className='flex cursor-pointer items-center gap-2 text-sm text-white/80'>
+        <Icon className='h-4 w-4 text-white/60' />
+        {label}
+    </Label>
+</div>
 );
 
 export function EditingForm({
@@ -493,8 +493,8 @@ export function EditingForm({
             : null;
 
     return (
-        <Card className='flex h-full w-full flex-col overflow-hidden rounded-lg border border-white/10 bg-black'>
-            <CardHeader className='flex flex-col gap-3 border-b border-white/10 pb-4 sm:flex-row sm:items-start sm:justify-between'>
+        <Card className='jmyr-card flex h-full w-full flex-col overflow-hidden rounded-lg'>
+            <CardHeader className='flex flex-col gap-3 border-b border-white/10 bg-white/[0.015] pb-4 sm:flex-row sm:items-start sm:justify-between'>
                 <div className='min-w-0'>
                     <div className='flex items-center'>
                         <CardTitle className='py-1 text-lg font-medium text-white'>{t('form.edit.title')}</CardTitle>
@@ -526,7 +526,7 @@ export function EditingForm({
                             onChange={(e) => setEditPrompt(e.target.value)}
                             required
                             disabled={isLoading}
-                            className='min-h-[80px] rounded-md border border-white/20 bg-black text-white placeholder:text-white/40 focus:border-white/50 focus:ring-white/50'
+                            className='jmyr-control min-h-[84px] rounded-md text-white placeholder:text-white/40 focus:border-white/50 focus:ring-white/50'
                         />
                     </div>
 
@@ -534,7 +534,7 @@ export function EditingForm({
                         <Label className='text-white'>{t('form.sourceImages', { maxImages })}</Label>
                         <Label
                             htmlFor='image-files-input'
-                            className='flex h-10 w-full cursor-pointer items-center justify-between rounded-md border border-white/20 bg-black px-3 py-2 text-sm transition-colors hover:bg-white/5'>
+                            className='jmyr-control flex h-10 w-full cursor-pointer items-center justify-between rounded-md px-3 py-2 text-sm transition-colors hover:bg-white/5'>
                             <span className='truncate pr-2 text-white/60'>{displayFileNames(imageFiles)}</span>
                             <span className='flex shrink-0 items-center gap-1.5 rounded-md bg-white/10 px-3 py-1 text-xs font-medium text-white/80 hover:bg-white/20'>
                                 <Upload className='h-3 w-3' /> {t('form.browse')}
@@ -584,7 +584,7 @@ export function EditingForm({
                             size='sm'
                             onClick={() => setEditShowMaskEditor(!editShowMaskEditor)}
                             disabled={isLoading || !editOriginalImageSize}
-                            className='w-full justify-start border-white/20 px-3 text-white/80 hover:bg-white/10 hover:text-white'>
+                            className='jmyr-control w-full justify-start px-3 text-white/80 hover:bg-white/10 hover:text-white'>
                             {editShowMaskEditor
                                 ? t('form.maskCloseEditor')
                                 : editGeneratedMaskFile
@@ -597,7 +597,7 @@ export function EditingForm({
                         </Button>
 
                         {editShowMaskEditor && firstImagePreviewUrl && editOriginalImageSize && (
-                            <div className='space-y-3 rounded-md border border-white/20 bg-black p-3'>
+                            <div className='space-y-3 rounded-md border border-white/10 bg-white/[0.03] p-3'>
                                 <p className='text-xs text-white/60'>{t('form.maskDescription')}</p>
                                 <div
                                     className='relative mx-auto w-full overflow-hidden rounded border border-white/10'
@@ -776,7 +776,7 @@ export function EditingForm({
                             )}
                         </RadioGroup>
                         {supportsCustomSize && editSize === 'custom' && (
-                            <div className='space-y-2 rounded-md border border-white/10 bg-white/5 p-3'>
+                            <div className='space-y-2 rounded-md border border-white/10 bg-white/[0.035] p-3'>
                                 <div className='flex items-center gap-3'>
                                     <div className='flex-1 space-y-1'>
                                         <Label htmlFor='edit-custom-width' className='text-xs text-white/70'>
@@ -791,7 +791,7 @@ export function EditingForm({
                                             value={editCustomWidth}
                                             onChange={(e) => setEditCustomWidth(parseInt(e.target.value, 10) || 0)}
                                             disabled={isLoading}
-                                            className='rounded-md border border-white/20 bg-black text-white focus:border-white/50 focus:ring-white/50'
+                                            className='jmyr-control rounded-md text-white focus:border-white/50 focus:ring-white/50'
                                         />
                                     </div>
                                     <span className='pt-5 text-white/60'>×</span>
@@ -808,7 +808,7 @@ export function EditingForm({
                                             value={editCustomHeight}
                                             onChange={(e) => setEditCustomHeight(parseInt(e.target.value, 10) || 0)}
                                             disabled={isLoading}
-                                            className='rounded-md border border-white/20 bg-black text-white focus:border-white/50 focus:ring-white/50'
+                                            className='jmyr-control rounded-md text-white focus:border-white/50 focus:ring-white/50'
                                         />
                                     </div>
                                 </div>

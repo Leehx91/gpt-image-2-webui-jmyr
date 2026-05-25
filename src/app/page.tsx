@@ -28,6 +28,7 @@ import {
     Moon,
     Sun
 } from 'lucide-react';
+import Image from 'next/image';
 import { useTheme } from 'next-themes';
 import * as React from 'react';
 
@@ -1398,7 +1399,7 @@ export default function HomePage() {
         : [];
 
     return (
-        <main className='min-h-screen bg-[#101010] p-3 text-white md:p-4 lg:h-screen lg:overflow-hidden'>
+        <main className='jmyr-shell min-h-screen p-3 text-white md:p-4 lg:h-screen lg:overflow-hidden'>
             <PasswordDialog
                 isOpen={isPasswordDialogOpen}
                 onOpenChange={setIsPasswordDialogOpen}
@@ -1411,14 +1412,37 @@ export default function HomePage() {
                 }
             />
             <div className='mx-auto flex min-h-screen w-full max-w-[1760px] flex-col gap-3 lg:h-full lg:min-h-0'>
-                <header className='shrink-0 rounded-lg border border-[#2b2b2b] bg-[#151515]/95 px-4 py-3 shadow-sm'>
+                <header className='jmyr-panel shrink-0 rounded-lg px-4 py-3'>
                     <div className='flex flex-col gap-4'>
                         <div className='flex flex-col gap-3 xl:flex-row xl:items-center xl:justify-between'>
                             <div className='min-w-0'>
                                 <p className='text-xs font-medium tracking-[0.16em] text-white/45 uppercase'>
                                     {t('home.kicker')}
                                 </p>
-                                <h1 className='mt-0.5 text-2xl font-semibold text-white'>{t('home.title')}</h1>
+                                <div className='mt-1 flex flex-wrap items-center gap-x-3 gap-y-2'>
+                                    <span className='relative block h-12 w-[98px] shrink-0 overflow-hidden'>
+                                        <Image
+                                            src='/jmyr-logo-white.png'
+                                            alt='JmyR'
+                                            width={184}
+                                            height={90}
+                                            priority
+                                            className='jmyr-logo-white h-12 w-auto object-contain'
+                                        />
+                                        <Image
+                                            src='/jmyr-logo-dark.png'
+                                            alt='JmyR'
+                                            width={184}
+                                            height={90}
+                                            priority
+                                            className='jmyr-logo-dark h-12 w-auto object-contain'
+                                        />
+                                    </span>
+                                    <span className='rounded-md border border-white/10 bg-white/[0.045] px-2.5 py-1 text-sm font-medium text-white/70'>
+                                        {language === 'zh' ? '图片工作台' : 'Image Workspace'}
+                                    </span>
+                                </div>
+                                <h1 className='sr-only'>{t('home.title')}</h1>
                             </div>
 
                             <div className='flex shrink-0 items-center gap-2 xl:justify-end'>
@@ -1428,7 +1452,7 @@ export default function HomePage() {
                                     onValueChange={(value) => setLanguagePreference(value as LanguagePreference)}>
                                     <SelectTrigger
                                         aria-label={t('settings.languageAria')}
-                                        className='h-9 w-[132px] border-white/20 bg-black text-sm text-white focus:border-white/50 focus:ring-white/50'>
+                                        className='jmyr-control h-9 w-[132px] text-sm text-white focus:border-white/50 focus:ring-white/50'>
                                         <SelectValue />
                                     </SelectTrigger>
                                     <SelectContent className='border-white/20 bg-black text-white'>
@@ -1448,7 +1472,7 @@ export default function HomePage() {
                                     variant='outline'
                                     size='icon'
                                     onClick={handleThemeToggle}
-                                    className='h-9 w-9 border-white/20 text-white/75 hover:bg-white/10 hover:text-white'
+                                        className='jmyr-control h-9 w-9 text-white/75 hover:bg-white/10 hover:text-white'
                                     aria-label={t('home.toggleTheme')}>
                                     {currentTheme === 'dark' ? (
                                         <Moon className='h-4 w-4' />
@@ -1474,14 +1498,14 @@ export default function HomePage() {
                                         value={apiKeyDraft}
                                         onChange={(event) => handleApiKeyChange(event.target.value)}
                                         placeholder={t('settings.apiKeyPlaceholder')}
-                                        className='h-10 border-white/20 bg-black text-white placeholder:text-white/35 focus:border-white/50 focus:ring-white/50'
+                                        className='jmyr-control h-10 text-white placeholder:text-white/35 focus:border-white/50 focus:ring-white/50'
                                     />
                                     <Button
                                         type='button'
                                         variant='outline'
                                         size='icon'
                                         onClick={() => setShowApiKey((current) => !current)}
-                                        className='h-10 w-10 border-white/20 text-white/75 hover:bg-white/10 hover:text-white'
+                                        className='jmyr-control h-10 w-10 text-white/75 hover:bg-white/10 hover:text-white'
                                         aria-label={showApiKey ? t('home.hideApiKey') : t('home.showApiKey')}>
                                         {showApiKey ? <EyeOff className='h-4 w-4' /> : <Eye className='h-4 w-4' />}
                                     </Button>
@@ -1490,7 +1514,7 @@ export default function HomePage() {
                                         type='button'
                                         variant='outline'
                                         disabled={!tokenConsoleUrl}
-                                        className='col-span-2 h-10 shrink-0 border-white/20 px-3 text-sm text-white/75 hover:bg-white/10 hover:text-white sm:col-span-1'>
+                                        className='jmyr-primary-action col-span-2 h-10 shrink-0 px-3 text-sm sm:col-span-1'>
                                         {tokenConsoleUrl ? (
                                             <a
                                                 href={tokenConsoleUrl}
@@ -1520,7 +1544,7 @@ export default function HomePage() {
                                 <Select value={selectedModel} onValueChange={handleModelSelect}>
                                     <SelectTrigger
                                         id='home-model'
-                                        className='h-10 border-white/20 bg-black text-sm text-white focus:border-white/50 focus:ring-white/50'>
+                                        className='jmyr-control h-10 text-sm text-white focus:border-white/50 focus:ring-white/50'>
                                         <SelectValue />
                                     </SelectTrigger>
                                     <SelectContent className='border-white/20 bg-black text-white'>
@@ -1655,7 +1679,7 @@ export default function HomePage() {
                                 />
                             </div>
                             {apiResponseInfo && (
-                                <div className='mt-3 shrink-0 rounded-lg border border-white/10 bg-black/95'>
+                                <div className='jmyr-card mt-3 shrink-0 rounded-lg'>
                                     <button
                                         type='button'
                                         onClick={() => setShowApiResponseInfo((current) => !current)}

@@ -93,8 +93,8 @@ function HistoryPanelImpl({
     const averageCost = totalImages > 0 ? totalCost / totalImages : 0;
 
     return (
-        <Card className='flex h-full w-full flex-col overflow-hidden rounded-lg border border-white/10 bg-black'>
-            <CardHeader className='flex flex-row items-center justify-between gap-4 border-b border-white/10 px-4 py-3'>
+        <Card className='jmyr-card flex h-full w-full flex-col overflow-hidden rounded-lg'>
+            <CardHeader className='flex flex-row items-center justify-between gap-4 border-b border-white/10 bg-white/[0.015] px-4 py-3'>
                 <div className='flex items-center gap-2'>
                     <CardTitle className='text-lg font-medium text-white'>{t('history.title')}</CardTitle>
                     {totalCost > 0 && (

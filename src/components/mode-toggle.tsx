@@ -17,12 +17,12 @@ export function ModeToggle({ currentMode, onModeChange }: ModeToggleProps) {
             value={currentMode}
             onValueChange={(value) => onModeChange(value as 'generate' | 'edit')}
             className='w-full sm:w-auto'>
-            <TabsList className='grid h-auto w-full grid-cols-2 gap-1 rounded-md border border-white/10 bg-white/[0.035] p-1 sm:w-auto'>
+            <TabsList className='jmyr-control grid h-auto w-full grid-cols-2 gap-1 rounded-md p-1 sm:w-auto'>
                 <TabsTrigger
                     value='generate'
                     className={`gap-2 rounded-md border px-3 py-2 text-sm transition-colors ${
                         currentMode === 'generate'
-                            ? 'border-white bg-white text-black'
+                            ? 'jmyr-primary-action jmyr-tab-active'
                             : 'border-transparent bg-transparent text-white/60 hover:border-white/20 hover:bg-white/5 hover:text-white/85'
                     } `}>
                     <Sparkles className='h-4 w-4' />
@@ -32,7 +32,7 @@ export function ModeToggle({ currentMode, onModeChange }: ModeToggleProps) {
                     value='edit'
                     className={`gap-2 rounded-md border px-3 py-2 text-sm transition-colors ${
                         currentMode === 'edit'
-                            ? 'border-white bg-white text-black'
+                            ? 'jmyr-primary-action jmyr-tab-active'
                             : 'border-transparent bg-transparent text-white/60 hover:border-white/20 hover:bg-white/5 hover:text-white/85'
                     } `}>
                     <Images className='h-4 w-4' />

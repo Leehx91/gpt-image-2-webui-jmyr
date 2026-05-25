@@ -1,8 +1,9 @@
 import assert from 'node:assert/strict';
-import { readFileSync } from 'node:fs';
+import { existsSync, readFileSync } from 'node:fs';
 import { test } from 'node:test';
 
 const read = (path) => readFileSync(new URL(`../${path}`, import.meta.url), 'utf8');
+const exists = (path) => existsSync(new URL(`../${path}`, import.meta.url));
 
 test('JmyR defaults point customers at the JmyR gateway and token console', () => {
   const appSettings = read('src/lib/app-settings.tsx');
@@ -21,6 +22,15 @@ test('JmyR branding is visible in metadata and home copy', () => {
   assert.match(i18n, /JmyR 图片工作台/);
   assert.match(i18n, /文生图/);
   assert.match(i18n, /图生图/);
+});
+
+test('JmyR official logo assets are used in the workspace header', () => {
+  const page = read('src/app/page.tsx');
+
+  assert.ok(exists('public/jmyr-logo-white.png'));
+  assert.ok(exists('public/jmyr-logo-dark.png'));
+  assert.match(page, /jmyr-logo-white\.png/);
+  assert.match(page, /jmyr-logo-dark\.png/);
 });
 
 test('JmyR image workspace only exposes supported image models', () => {
