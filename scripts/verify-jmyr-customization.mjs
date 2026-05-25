@@ -28,3 +28,11 @@ test('image API route avoids logging prompts, request params, or uploaded filena
   assert.doesNotMatch(route, /Calling OpenAI .*params/);
   assert.doesNotMatch(route, /image: `\[/);
 });
+
+test('image API route does not send auto quality to the JmyR image gateway', () => {
+  const route = read('src/app/api/images/route.ts');
+
+  assert.match(route, /function normalizeImageQuality\(/);
+  assert.match(route, /normalizeImageQuality\(formData\.get\('quality'\), 'medium'\)/);
+  assert.doesNotMatch(route, /const quality = \(formData\.get\('quality'\)[^;]+ \|\| 'auto';/);
+});

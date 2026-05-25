@@ -161,7 +161,7 @@ const en = {
     'form.highFidelityTooltip':
         "gpt-image-2 always processes reference images at high fidelity. This improves edit quality but uses more input image tokens per request than gpt-image-1.5's default fidelity.",
     'form.qualityDescription':
-        'Quality controls detail, cost, and wait time. Auto is recommended unless you need a specific tradeoff.',
+        'Quality controls detail, cost, and wait time. Medium is recommended unless you need a specific tradeoff.',
     'form.invalidMaxFiles': 'You can only select up to {maxImages} images.',
     'form.maskApplied': 'Mask applied: {name}',
     'form.maskClear': 'Clear',
@@ -496,7 +496,7 @@ const zh: Translations = {
     'form.generate.title': '生成图片',
     'form.highFidelityTooltip':
         'gpt-image-2 会始终以高保真方式处理参考图。这样能提升编辑质量，但每次请求会比 gpt-image-1.5 的默认保真度使用更多图片输入 token。',
-    'form.qualityDescription': '质量会影响细节、成本和等待时间。不确定时建议使用自动。',
+    'form.qualityDescription': '质量会影响细节、成本和等待时间。不确定时建议使用中等。',
     'form.invalidMaxFiles': '最多只能选择 {maxImages} 张图片。',
     'form.maskApplied': '已应用蒙版：{name}',
     'form.maskClear': '清除',

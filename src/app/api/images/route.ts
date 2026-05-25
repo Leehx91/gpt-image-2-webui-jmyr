@@ -342,6 +342,8 @@ function gcd(left: number, right: number): number {
 // Define valid output formats for type safety
 const VALID_OUTPUT_FORMATS = ['png', 'jpeg', 'webp'] as const;
 type ValidOutputFormat = (typeof VALID_OUTPUT_FORMATS)[number];
+const VALID_IMAGE_QUALITIES = ['low', 'medium', 'high'] as const;
+type ValidImageQuality = (typeof VALID_IMAGE_QUALITIES)[number];
 
 // Validate and normalize output format
 function validateOutputFormat(format: unknown): ValidOutputFormat {
@@ -355,6 +357,16 @@ function validateOutputFormat(format: unknown): ValidOutputFormat {
     }
 
     return 'png'; // default fallback
+}
+
+function normalizeImageQuality(value: unknown, fallback: ValidImageQuality = 'medium'): ValidImageQuality {
+    const normalized = typeof value === 'string' ? value.trim().toLowerCase() : '';
+
+    if (VALID_IMAGE_QUALITIES.includes(normalized as ValidImageQuality)) {
+        return normalized as ValidImageQuality;
+    }
+
+    return fallback;
 }
 
 function getRevisedPrompt(source: unknown): string | undefined {
@@ -608,7 +620,7 @@ export async function POST(request: NextRequest) {
             requestedImageCount = Math.max(1, Math.min(n || 1, 10));
             // gpt-image-2 accepts arbitrary WxH strings that the SDK's narrow literal union doesn't express.
             const size = ((formData.get('size') as string) || '1024x1024') as OpenAI.Images.ImageGenerateParams['size'];
-            const quality = (formData.get('quality') as OpenAI.Images.ImageGenerateParams['quality']) || 'auto';
+            const quality = normalizeImageQuality(formData.get('quality'), 'medium');
             const output_format =
                 (formData.get('output_format') as OpenAI.Images.ImageGenerateParams['output_format']) || 'png';
             const output_compression_str = formData.get('output_compression') as string | null;
@@ -817,7 +829,7 @@ export async function POST(request: NextRequest) {
             requestedImageCount = Math.max(1, Math.min(n || 1, 10));
             // gpt-image-2 accepts arbitrary WxH strings that the SDK's narrow literal union doesn't express.
             const size = ((formData.get('size') as string) || 'auto') as OpenAI.Images.ImageEditParams['size'];
-            const quality = (formData.get('quality') as OpenAI.Images.ImageEditParams['quality']) || 'auto';
+            const quality = normalizeImageQuality(formData.get('quality'), 'medium');
 
             const imageFiles: File[] = [];
             for (const [key, value] of formData.entries()) {
@@ -838,7 +850,7 @@ export async function POST(request: NextRequest) {
                 image: imageFiles,
                 n: requestedImageCount,
                 size: size === 'auto' ? undefined : size,
-                quality: quality === 'auto' ? undefined : quality
+                quality
             };
 
             // Handle streaming mode for editing
