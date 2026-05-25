@@ -3,6 +3,7 @@
 import * as React from 'react';
 
 export const defaultModelIds = ['gpt-image-2'];
+export const defaultBaseUrl = 'https://www.jmyr.net/v1';
 const legacyDefaultModelIds = ['gpt-image-2', 'gpt-image-1.5', 'gpt-image-1', 'gpt-image-1-mini'];
 
 export type AppSettings = {
@@ -21,7 +22,7 @@ type AppSettingsContextValue = {
 const storageKey = 'gptImageAppSettings';
 
 const defaultSettings: AppSettings = {
-    baseUrl: '',
+    baseUrl: defaultBaseUrl,
     apiKey: '',
     models: defaultModelIds
 };
@@ -61,9 +62,10 @@ function isLegacyDefaultModels(models: string[]): boolean {
 
 function normalizeSettings(settings: Partial<AppSettings> | null | undefined): AppSettings {
     const rawModels = settings?.models ?? defaultModelIds;
+    const baseUrl = settings?.baseUrl?.trim() || defaultBaseUrl;
 
     return {
-        baseUrl: settings?.baseUrl?.trim() ?? '',
+        baseUrl,
         apiKey: settings?.apiKey?.trim() ?? '',
         models: isLegacyDefaultModels(rawModels) ? defaultModelIds : normalizeModels(rawModels)
     };

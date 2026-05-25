@@ -504,6 +504,13 @@ function sha256(data: string): string {
     return crypto.createHash('sha256').update(data).digest('hex');
 }
 
+function logImageApiError(context: string, error: unknown) {
+    console.error(context, {
+        status: getErrorStatusCode(error) ?? 'unknown',
+        type: error instanceof Error ? error.name : typeof error
+    });
+}
+
 export async function POST(request: NextRequest) {
     console.log('Received POST request to /api/images');
     let responseLanguageForError: FormDataEntryValue | null = null;
@@ -570,16 +577,11 @@ export async function POST(request: NextRequest) {
                 'Accept-Language': acceptLanguage
             }
         });
-        console.log(`OpenAI image request timeout: ${imageRequestTimeoutMs}ms`);
-        console.log(`OpenAI image request language: ${acceptLanguage}`);
-
         const mode = formData.get('mode') as 'generate' | 'edit' | null;
         const prompt = formData.get('prompt') as string | null;
         const model = ((formData.get('model') as string | null)?.trim() || 'gpt-image-2') as
             | OpenAI.Images.ImageGenerateParams['model']
             | OpenAI.Images.ImageEditParams['model'];
-
-        console.log(`Mode: ${mode}, Model: ${model}, Prompt: ${prompt ? prompt.substring(0, 50) + '...' : 'N/A'}`);
 
         if (!mode || !prompt) {
             return NextResponse.json({ error: 'Missing required parameters: mode and prompt' }, { status: 400 });
@@ -588,6 +590,14 @@ export async function POST(request: NextRequest) {
         // Check for streaming mode
         const streamEnabled = formData.get('stream') === 'true';
         const partialImagesCount = parseInt((formData.get('partial_images') as string) || '2', 10);
+        console.log('Image request received:', {
+            mode,
+            model,
+            stream: streamEnabled,
+            storage: effectiveStorageMode,
+            timeoutMs: imageRequestTimeoutMs,
+            language: acceptLanguage
+        });
 
         let result: OpenAI.Images.ImagesResponse;
         let requestedImageCount = 1;
@@ -636,7 +646,16 @@ export async function POST(request: NextRequest) {
                     partial_images: actualPartialImages
                 };
 
-                console.log('Calling OpenAI generate with streaming, params:', streamParams);
+                console.log('Calling OpenAI generate with streaming:', {
+                    model,
+                    n: requestedImageCount,
+                    size,
+                    quality,
+                    output_format,
+                    background,
+                    moderation,
+                    partial_images: actualPartialImages
+                });
                 const stream = await openai.images.generate(streamParams);
 
                 // Create SSE response
@@ -736,7 +755,7 @@ export async function POST(request: NextRequest) {
                             enqueueStreamingDone(controller, encoder, completedImages, finalUsage);
                             closeStreamingController(controller);
                         } catch (error) {
-                            console.error('Streaming error:', error);
+                            logImageApiError('Streaming error', error);
                             try {
                                 await emitLastPartialImageAsCompleted({
                                     controller,
@@ -783,7 +802,15 @@ export async function POST(request: NextRequest) {
 
             const params: OpenAI.Images.ImageGenerateParams = baseParams;
             requestSingleImage = () => openai.images.generate({ ...params, n: 1 });
-            console.log('Calling OpenAI generate with params:', params);
+            console.log('Calling OpenAI generate:', {
+                model,
+                n: requestedImageCount,
+                size,
+                quality,
+                output_format,
+                background,
+                moderation
+            });
             result = await openai.images.generate(params);
         } else if (mode === 'edit') {
             const n = parseInt((formData.get('n') as string) || '1', 10);
@@ -816,12 +843,14 @@ export async function POST(request: NextRequest) {
 
             // Handle streaming mode for editing
             if (streamEnabled) {
-                console.log('Calling OpenAI edit with streaming, params:', {
-                    ...baseEditParams,
-                    stream: true,
+                console.log('Calling OpenAI edit with streaming:', {
+                    model,
+                    n: requestedImageCount,
+                    size,
+                    quality,
                     partial_images: partialImagesCount,
-                    image: `[${imageFiles.map((f) => f.name).join(', ')}]`,
-                    mask: maskFile ? maskFile.name : 'N/A'
+                    imageCount: imageFiles.length,
+                    hasMask: Boolean(maskFile)
                 });
 
                 const streamEditParams = {
@@ -930,7 +959,7 @@ export async function POST(request: NextRequest) {
                             enqueueStreamingDone(controller, encoder, completedImages, finalUsage);
                             closeStreamingController(controller);
                         } catch (error) {
-                            console.error('Streaming edit error:', error);
+                            logImageApiError('Streaming edit error', error);
                             try {
                                 await emitLastPartialImageAsCompleted({
                                     controller,
@@ -981,10 +1010,13 @@ export async function POST(request: NextRequest) {
             };
             requestSingleImage = () => openai.images.edit({ ...params, n: 1 });
 
-            console.log('Calling OpenAI edit with params:', {
-                ...params,
-                image: `[${imageFiles.map((f) => f.name).join(', ')}]`,
-                mask: maskFile ? maskFile.name : 'N/A'
+            console.log('Calling OpenAI edit:', {
+                model,
+                n: requestedImageCount,
+                size,
+                quality,
+                imageCount: imageFiles.length,
+                hasMask: Boolean(maskFile)
             });
             result = await openai.images.edit(params);
         } else {
@@ -996,7 +1028,7 @@ export async function POST(request: NextRequest) {
         result = await fillMissingImages(result, requestedImageCount, requestSingleImage);
 
         if (!result || !Array.isArray(result.data) || result.data.length === 0) {
-            console.error('Invalid or empty data received from OpenAI API:', result);
+            console.error('Invalid or empty data received from OpenAI API.');
             return NextResponse.json({ error: 'Failed to retrieve image data from API.' }, { status: 500 });
         }
 
@@ -1050,7 +1082,7 @@ export async function POST(request: NextRequest) {
             usage: result.usage
         });
     } catch (error: unknown) {
-        console.error('Error in /api/images:', error);
+        logImageApiError('Error in /api/images', error);
 
         const errorMessage = getImageApiErrorMessage(error, responseLanguageForError);
         const status = getErrorStatusCode(error) ?? 500;

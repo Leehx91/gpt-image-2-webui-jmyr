@@ -7,6 +7,7 @@
     "build": "next build",
     "start": "next start",
     "lint": "eslint src",
+    "test:jmyr": "node --test scripts/verify-jmyr-customization.mjs",
     "format": "prettier --write \"src/**/*.{ts,tsx}\""
   },
   "dependencies": {

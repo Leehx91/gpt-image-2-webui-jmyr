@@ -150,7 +150,7 @@ function getTokenConsoleUrl(baseUrl: string): string | null {
 
     try {
         const parsedBaseUrl = new URL(trimmedBaseUrl);
-        return new URL('/console/token', parsedBaseUrl.origin).toString();
+        return new URL('/keys', parsedBaseUrl.origin).toString();
     } catch {
         return null;
     }
@@ -345,16 +345,6 @@ export default function HomePage() {
         setTheme(currentTheme === 'dark' ? 'light' : 'dark');
     };
 
-    const handleBaseUrlChange = (value: string) => {
-        setBaseUrlDraft(value);
-        saveSettings({
-            ...settings,
-            baseUrl: value,
-            apiKey: apiKeyDraft,
-            models: settings.models
-        });
-    };
-
     const handleApiKeyChange = (value: string) => {
         setApiKeyDraft(value);
         saveSettings({
@@ -399,6 +389,12 @@ export default function HomePage() {
     );
 
     const fetchModelOptions = React.useCallback(async () => {
+        if (!apiKeyDraft.trim()) {
+            setRemoteModelOptions([]);
+            setModelFetchError(null);
+            return;
+        }
+
         if (isPasswordRequiredByBackend && !clientPasswordHash) {
             setModelFetchError(t('page.passwordMissing'));
             return;
@@ -432,16 +428,6 @@ export default function HomePage() {
             setIsFetchingModels(false);
         }
     }, [apiKeyDraft, baseUrlDraft, clientPasswordHash, isPasswordRequiredByBackend, t]);
-
-    React.useEffect(() => {
-        if (isPasswordRequiredByBackend === null) return;
-
-        const timeoutId = window.setTimeout(() => {
-            fetchModelOptions();
-        }, 600);
-
-        return () => window.clearTimeout(timeoutId);
-    }, [fetchModelOptions, isPasswordRequiredByBackend]);
 
     React.useEffect(() => {
         const handlePointerDown = (event: PointerEvent) => {
@@ -1570,7 +1556,7 @@ export default function HomePage() {
     }
 
     return (
-        <main className='min-h-screen bg-black p-3 text-white md:p-4 lg:h-screen lg:overflow-hidden'>
+        <main className='min-h-screen bg-[#111111] p-3 text-white md:p-4 lg:h-screen lg:overflow-hidden'>
             <PasswordDialog
                 isOpen={isPasswordDialogOpen}
                 onOpenChange={setIsPasswordDialogOpen}
@@ -1583,7 +1569,7 @@ export default function HomePage() {
                 }
             />
             <div className='flex min-h-screen w-full flex-col gap-3 lg:h-full lg:min-h-0'>
-                <header className='shrink-0 rounded-lg border border-white/10 bg-black/95 px-4 py-3 shadow-sm'>
+                <header className='shrink-0 rounded-lg border border-[#2b2b2b] bg-[#151515]/95 px-4 py-3 shadow-sm'>
                     <div className='flex flex-col gap-3'>
                         <div className='flex flex-col gap-3 md:flex-row md:items-center md:justify-between'>
                             <div className='min-w-0'>
@@ -1633,20 +1619,13 @@ export default function HomePage() {
 
                         <div className='grid gap-2 md:grid-cols-2 xl:grid-cols-[minmax(220px,0.85fr)_minmax(220px,0.85fr)_minmax(340px,1.3fr)] xl:items-start'>
                             <div className='min-w-0'>
-                                <Label
-                                    htmlFor='home-api-base-url'
-                                    className='mb-1.5 flex items-center gap-1.5 text-xs font-medium text-white/70'>
+                                <Label className='mb-1.5 flex items-center gap-1.5 text-xs font-medium text-white/70'>
                                     <Globe2 className='h-3.5 w-3.5' />
                                     {t('settings.baseUrl')}
                                 </Label>
-                                <Input
-                                    id='home-api-base-url'
-                                    type='url'
-                                    value={baseUrlDraft}
-                                    onChange={(event) => handleBaseUrlChange(event.target.value)}
-                                    placeholder={t('settings.baseUrlPlaceholder')}
-                                    className='h-9 border-white/20 bg-black text-white placeholder:text-white/35 focus:border-white/50 focus:ring-white/50'
-                                />
+                                <div className='flex h-9 min-w-0 items-center rounded-md border border-white/15 bg-[#111111] px-3 text-sm text-white/80'>
+                                    <span className='truncate'>{baseUrlDraft}</span>
+                                </div>
                             </div>
 
                             <div ref={modelMenuRef} className='relative min-w-0'>
