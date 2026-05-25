@@ -1,6 +1,7 @@
 'use client';
 
 import { ModeToggle } from '@/components/mode-toggle';
+import { SizePresetPicker } from '@/components/size-preset-picker';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
@@ -8,18 +9,14 @@ import { Label } from '@/components/ui/label';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { Slider } from '@/components/ui/slider';
 import { Textarea } from '@/components/ui/textarea';
-import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
 import type { GptImageModel } from '@/lib/cost-utils';
 import { formatSizeValidationReason, useI18n } from '@/lib/i18n';
-import { getPresetTooltip, validateGptImage2Size } from '@/lib/size-utils';
+import { validateGptImage2Size } from '@/lib/size-utils';
 import type { SizePreset } from '@/lib/size-utils';
 import {
     Upload,
     Eraser,
     Save,
-    Square,
-    RectangleHorizontal,
-    RectangleVertical,
     Sparkles,
     Tally1,
     Tally2,
@@ -29,8 +26,7 @@ import {
     ScanEye,
     UploadCloud,
     Lock,
-    LockOpen,
-    SquareDashed
+    LockOpen
 } from 'lucide-react';
 import Image from 'next/image';
 import * as React from 'react';
@@ -578,6 +574,7 @@ export function EditingForm({
 
                     <div className='space-y-3'>
                         <Label className='block text-white'>{t('common.mask')}</Label>
+                        <p className='text-xs text-white/50'>{t('form.maskHelp')}</p>
                         <Button
                             type='button'
                             variant='outline'
@@ -721,60 +718,14 @@ export function EditingForm({
                     </div>
 
                     <div className='space-y-3'>
-                        <Label className='block text-white'>{t('common.size')}</Label>
-                        <RadioGroup
+                        <SizePresetPicker
                             value={editSize}
-                            onValueChange={(value) => setEditSize(value as EditingFormData['size'])}
+                            onValueChange={setEditSize}
                             disabled={isLoading}
-                            className='flex flex-wrap gap-x-5 gap-y-3'>
-                            <Tooltip>
-                                <TooltipTrigger asChild>
-                                    <div>
-                                        <RadioItemWithIcon
-                                            value='square'
-                                            id='edit-size-square'
-                                            label={t('common.square')}
-                                            Icon={Square}
-                                        />
-                                    </div>
-                                </TooltipTrigger>
-                                <TooltipContent>{getPresetTooltip('square', editModel)}</TooltipContent>
-                            </Tooltip>
-                            <Tooltip>
-                                <TooltipTrigger asChild>
-                                    <div>
-                                        <RadioItemWithIcon
-                                            value='landscape'
-                                            id='edit-size-landscape'
-                                            label={t('common.landscape')}
-                                            Icon={RectangleHorizontal}
-                                        />
-                                    </div>
-                                </TooltipTrigger>
-                                <TooltipContent>{getPresetTooltip('landscape', editModel)}</TooltipContent>
-                            </Tooltip>
-                            <Tooltip>
-                                <TooltipTrigger asChild>
-                                    <div>
-                                        <RadioItemWithIcon
-                                            value='portrait'
-                                            id='edit-size-portrait'
-                                            label={t('common.portrait')}
-                                            Icon={RectangleVertical}
-                                        />
-                                    </div>
-                                </TooltipTrigger>
-                                <TooltipContent>{getPresetTooltip('portrait', editModel)}</TooltipContent>
-                            </Tooltip>
-                            {supportsCustomSize && (
-                                <RadioItemWithIcon
-                                    value='custom'
-                                    id='edit-size-custom'
-                                    label={t('common.custom')}
-                                    Icon={SquareDashed}
-                                />
-                            )}
-                        </RadioGroup>
+                            model={editModel}
+                            idPrefix='edit-size'
+                            supportsCustomSize={supportsCustomSize}
+                        />
                         {supportsCustomSize && editSize === 'custom' && (
                             <div className='space-y-2 rounded-md border border-white/10 bg-white/[0.035] p-3'>
                                 <div className='flex items-center gap-3'>

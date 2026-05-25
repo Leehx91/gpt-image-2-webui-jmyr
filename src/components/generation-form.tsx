@@ -1,6 +1,7 @@
 'use client';
 
 import { ModeToggle } from '@/components/mode-toggle';
+import { SizePresetPicker } from '@/components/size-preset-picker';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
@@ -8,19 +9,13 @@ import { Label } from '@/components/ui/label';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { Slider } from '@/components/ui/slider';
 import { Textarea } from '@/components/ui/textarea';
-import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
 import type { GptImageModel } from '@/lib/cost-utils';
 import { formatSizeValidationReason, useI18n } from '@/lib/i18n';
-import { getPresetTooltip, validateGptImage2Size } from '@/lib/size-utils';
+import { validateGptImage2Size } from '@/lib/size-utils';
 import type { SizePreset } from '@/lib/size-utils';
 import {
-    Square,
-    RectangleHorizontal,
-    RectangleVertical,
     Sparkles,
     Eraser,
-    ShieldCheck,
-    ShieldAlert,
     FileImage,
     Tally1,
     Tally2,
@@ -28,8 +23,7 @@ import {
     Loader2,
     BrickWall,
     Lock,
-    LockOpen,
-    SquareDashed
+    LockOpen
 } from 'lucide-react';
 import * as React from 'react';
 
@@ -43,7 +37,7 @@ export type GenerationFormData = {
     output_format: 'png' | 'jpeg' | 'webp';
     output_compression?: number;
     background: 'transparent' | 'opaque' | 'auto';
-    moderation: 'low' | 'auto';
+    moderation: 'auto';
     model: GptImageModel;
     stream: boolean;
     partialImages: 1 | 2 | 3;
@@ -76,8 +70,6 @@ type GenerationFormProps = {
     setCompression: React.Dispatch<React.SetStateAction<number[]>>;
     background: GenerationFormData['background'];
     setBackground: React.Dispatch<React.SetStateAction<GenerationFormData['background']>>;
-    moderation: GenerationFormData['moderation'];
-    setModeration: React.Dispatch<React.SetStateAction<GenerationFormData['moderation']>>;
 };
 
 const RadioItemWithIcon = ({
@@ -130,9 +122,7 @@ export function GenerationForm({
     compression,
     setCompression,
     background,
-    setBackground,
-    moderation,
-    setModeration
+    setBackground
 }: GenerationFormProps) {
     const { t } = useI18n();
     const showCompression = outputFormat === 'jpeg' || outputFormat === 'webp';
@@ -163,7 +153,7 @@ export function GenerationForm({
             quality,
             output_format: outputFormat,
             background,
-            moderation,
+            moderation: 'auto',
             model,
             stream: false,
             partialImages: 2
@@ -238,60 +228,14 @@ export function GenerationForm({
                     </div>
 
                     <div className='space-y-3'>
-                        <Label className='block text-white'>{t('common.size')}</Label>
-                        <RadioGroup
+                        <SizePresetPicker
                             value={size}
-                            onValueChange={(value) => setSize(value as GenerationFormData['size'])}
+                            onValueChange={setSize}
                             disabled={isLoading}
-                            className='flex flex-wrap gap-x-5 gap-y-3'>
-                            <Tooltip>
-                                <TooltipTrigger asChild>
-                                    <div>
-                                        <RadioItemWithIcon
-                                            value='square'
-                                            id='size-square'
-                                            label={t('common.square')}
-                                            Icon={Square}
-                                        />
-                                    </div>
-                                </TooltipTrigger>
-                                <TooltipContent>{getPresetTooltip('square', model)}</TooltipContent>
-                            </Tooltip>
-                            <Tooltip>
-                                <TooltipTrigger asChild>
-                                    <div>
-                                        <RadioItemWithIcon
-                                            value='landscape'
-                                            id='size-landscape'
-                                            label={t('common.landscape')}
-                                            Icon={RectangleHorizontal}
-                                        />
-                                    </div>
-                                </TooltipTrigger>
-                                <TooltipContent>{getPresetTooltip('landscape', model)}</TooltipContent>
-                            </Tooltip>
-                            <Tooltip>
-                                <TooltipTrigger asChild>
-                                    <div>
-                                        <RadioItemWithIcon
-                                            value='portrait'
-                                            id='size-portrait'
-                                            label={t('common.portrait')}
-                                            Icon={RectangleVertical}
-                                        />
-                                    </div>
-                                </TooltipTrigger>
-                                <TooltipContent>{getPresetTooltip('portrait', model)}</TooltipContent>
-                            </Tooltip>
-                            {supportsCustomSize && (
-                                <RadioItemWithIcon
-                                    value='custom'
-                                    id='size-custom'
-                                    label={t('common.custom')}
-                                    Icon={SquareDashed}
-                                />
-                            )}
-                        </RadioGroup>
+                            model={model}
+                            idPrefix='size'
+                            supportsCustomSize={supportsCustomSize}
+                        />
                         {supportsCustomSize && size === 'custom' && (
                             <div className='space-y-2 rounded-md border border-white/10 bg-white/[0.035] p-3'>
                                 <div className='flex items-center gap-3'>
@@ -433,18 +377,6 @@ export function GenerationForm({
                             />
                         </div>
                     )}
-
-                    <div className='space-y-3'>
-                        <Label className='block text-white'>{t('common.moderationLevel')}</Label>
-                        <RadioGroup
-                            value={moderation}
-                            onValueChange={(value) => setModeration(value as GenerationFormData['moderation'])}
-                            disabled={isLoading}
-                            className='flex flex-wrap gap-x-5 gap-y-3'>
-                            <RadioItemWithIcon value='auto' id='mod-auto' label={t('common.auto')} Icon={ShieldCheck} />
-                            <RadioItemWithIcon value='low' id='mod-low' label={t('common.low')} Icon={ShieldAlert} />
-                        </RadioGroup>
-                    </div>
                 </CardContent>
                 <CardFooter className='border-t border-white/10 p-4'>
                     <Button

@@ -76,3 +76,23 @@ test('send-to-edit can append sources without revoking existing previews', () =>
   assert.match(page, /function revokeBlobUrl\(/);
   assert.doesNotMatch(page, /editSourceImagePreviewUrls\.forEach\(\(url\) => URL\.revokeObjectURL\(url\)\)/);
 });
+
+test('JmyR image workspace exposes clear size tiers and hides moderation controls', () => {
+  const page = read('src/app/page.tsx');
+  const sizeUtils = read('src/lib/size-utils.ts');
+  const generationForm = read('src/components/generation-form.tsx');
+  const i18n = read('src/lib/i18n.tsx');
+
+  assert.match(page, /useState<GenerationFormData\['size'\]>\('square_2k'\)/);
+  assert.match(page, /useState<EditingFormData\['size'\]>\('square_2k'\)/);
+  assert.match(sizeUtils, /square_1k/);
+  assert.match(sizeUtils, /square_2k/);
+  assert.match(sizeUtils, /square_4k/);
+  assert.match(i18n, /1K 标准/);
+  assert.match(i18n, /2K 高清/);
+  assert.match(i18n, /4K 超清/);
+  assert.match(i18n, /蒙版用于局部修图/);
+  assert.match(generationForm, /moderation: 'auto'/);
+  assert.doesNotMatch(generationForm, /common\.moderationLevel/);
+  assert.doesNotMatch(generationForm, /setModeration/);
+});

@@ -162,13 +162,26 @@ const en = {
         "gpt-image-2 always processes reference images at high fidelity. This improves edit quality but uses more input image tokens per request than gpt-image-1.5's default fidelity.",
     'form.qualityDescription':
         'Quality controls detail, cost, and wait time. Medium is recommended unless you need a specific tradeoff.',
+    'form.sizeDescription': 'Higher resolution uses much more image quota and usually takes longer.',
+    'form.sizeTier1k': '1K Standard',
+    'form.sizeTier2k': '2K HD',
+    'form.sizeTier4k': '4K Ultra',
+    'form.sizeRatioSquare': 'Square',
+    'form.sizeRatioLandscape': 'Landscape',
+    'form.sizeRatioPortrait': 'Portrait',
+    'form.sizeCost1k': 'Lowest quota use',
+    'form.sizeCost2k': 'Recommended default',
+    'form.sizeCost4k': 'Heavy quota use',
+    'form.sizeCustomDescription': 'Enter exact width and height',
+    'form.sizeCostCustom': 'Quota depends on total pixels',
     'form.invalidMaxFiles': 'You can only select up to {maxImages} images.',
     'form.maskApplied': 'Mask applied: {name}',
     'form.maskClear': 'Clear',
     'form.maskCloseEditor': 'Close Mask Editor',
     'form.maskCreate': 'Create Mask',
+    'form.maskHelp': 'Optional. Use a mask for local edits: mark the area you want changed and keep the rest closer to the source image.',
     'form.maskDescription':
-        'Draw on the image below to mark areas for editing (drawn areas become transparent in the mask).',
+        'Draw over the area you want to change, then save the mask before editing. Unmarked areas are kept closer to the source image.',
     'form.maskEditSaved': 'Edit Saved Mask',
     'form.maskLoadFailed': 'Failed to load the uploaded mask image to check dimensions.',
     'form.maskPreviewAlt': 'Generated mask preview',
@@ -497,12 +510,25 @@ const zh: Translations = {
     'form.highFidelityTooltip':
         'gpt-image-2 会始终以高保真方式处理参考图。这样能提升编辑质量，但每次请求会比 gpt-image-1.5 的默认保真度使用更多图片输入 token。',
     'form.qualityDescription': '质量会影响细节、成本和等待时间。不确定时建议使用中等。',
+    'form.sizeDescription': '分辨率越高，额度消耗越明显，等待时间通常也越久。',
+    'form.sizeTier1k': '1K 标准',
+    'form.sizeTier2k': '2K 高清',
+    'form.sizeTier4k': '4K 超清',
+    'form.sizeRatioSquare': '方图',
+    'form.sizeRatioLandscape': '横图',
+    'form.sizeRatioPortrait': '竖图',
+    'form.sizeCost1k': '额度消耗最低',
+    'form.sizeCost2k': '默认推荐',
+    'form.sizeCost4k': '额度消耗较高',
+    'form.sizeCustomDescription': '手动输入宽高',
+    'form.sizeCostCustom': '按总像素消耗额度',
     'form.invalidMaxFiles': '最多只能选择 {maxImages} 张图片。',
     'form.maskApplied': '已应用蒙版：{name}',
     'form.maskClear': '清除',
     'form.maskCloseEditor': '关闭蒙版编辑器',
     'form.maskCreate': '创建蒙版',
-    'form.maskDescription': '在下方图片上涂抹要编辑的区域（涂抹区域会在蒙版中变为透明）。',
+    'form.maskHelp': '可选。蒙版用于局部修图：标出要改的区域，其余部分会尽量保持原图。',
+    'form.maskDescription': '在下方图片上涂抹要修改的区域，然后保存蒙版再编辑。未涂抹区域会尽量保持接近原图。',
     'form.maskEditSaved': '编辑已保存蒙版',
     'form.maskLoadFailed': '无法加载上传的蒙版图片来检查尺寸。',
     'form.maskPreviewAlt': '生成的蒙版预览',
@@ -809,6 +835,24 @@ export function formatOptionLabel(value: string | undefined, t: Translate): stri
             return t('common.landscape');
         case 'portrait':
             return t('common.portrait');
+        case 'square_1k':
+            return `${t('form.sizeTier1k')} · ${t('form.sizeRatioSquare')}`;
+        case 'landscape_1k':
+            return `${t('form.sizeTier1k')} · ${t('form.sizeRatioLandscape')}`;
+        case 'portrait_1k':
+            return `${t('form.sizeTier1k')} · ${t('form.sizeRatioPortrait')}`;
+        case 'square_2k':
+            return `${t('form.sizeTier2k')} · ${t('form.sizeRatioSquare')}`;
+        case 'landscape_2k':
+            return `${t('form.sizeTier2k')} · ${t('form.sizeRatioLandscape')}`;
+        case 'portrait_2k':
+            return `${t('form.sizeTier2k')} · ${t('form.sizeRatioPortrait')}`;
+        case 'square_4k':
+            return `${t('form.sizeTier4k')} · ${t('form.sizeRatioSquare')}`;
+        case 'landscape_4k':
+            return `${t('form.sizeTier4k')} · ${t('form.sizeRatioLandscape')}`;
+        case 'portrait_4k':
+            return `${t('form.sizeTier4k')} · ${t('form.sizeRatioPortrait')}`;
         case 'low':
             return t('common.low');
         case 'medium':

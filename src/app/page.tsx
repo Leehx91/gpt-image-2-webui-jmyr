@@ -228,7 +228,7 @@ export default function HomePage() {
     const [editSourceImagePreviewUrls, setEditSourceImagePreviewUrls] = React.useState<string[]>([]);
     const [editPrompt, setEditPrompt] = React.useState('');
     const [editN, setEditN] = React.useState([1]);
-    const [editSize, setEditSize] = React.useState<EditingFormData['size']>('square');
+    const [editSize, setEditSize] = React.useState<EditingFormData['size']>('square_2k');
     const [editCustomWidth, setEditCustomWidth] = React.useState<number>(1024);
     const [editCustomHeight, setEditCustomHeight] = React.useState<number>(1024);
     const [editQuality, setEditQuality] = React.useState<EditingFormData['quality']>('medium');
@@ -250,14 +250,13 @@ export default function HomePage() {
     const selectedModel = (imageModelOptions.includes(modelDraft.trim()) ? modelDraft.trim() : imageModelOptions[0]) as GptImageModel;
     const [genPrompt, setGenPrompt] = React.useState('');
     const [genN, setGenN] = React.useState([1]);
-    const [genSize, setGenSize] = React.useState<GenerationFormData['size']>('square');
+    const [genSize, setGenSize] = React.useState<GenerationFormData['size']>('square_2k');
     const [genCustomWidth, setGenCustomWidth] = React.useState<number>(1024);
     const [genCustomHeight, setGenCustomHeight] = React.useState<number>(1024);
     const [genQuality, setGenQuality] = React.useState<GenerationFormData['quality']>('medium');
     const [genOutputFormat, setGenOutputFormat] = React.useState<GenerationFormData['output_format']>('png');
     const [genCompression, setGenCompression] = React.useState([100]);
     const [genBackground, setGenBackground] = React.useState<GenerationFormData['background']>('auto');
-    const [genModeration, setGenModeration] = React.useState<GenerationFormData['moderation']>('auto');
 
     const normalizeRevisedPrompt = React.useCallback((value: unknown): string | undefined => {
         return typeof value === 'string' && value.trim() ? value : undefined;
@@ -1620,8 +1619,6 @@ export default function HomePage() {
                                 setCompression={setGenCompression}
                                 background={genBackground}
                                 setBackground={setGenBackground}
-                                moderation={genModeration}
-                                setModeration={setGenModeration}
                             />
                         </div>
                         <div className={mode === 'edit' ? 'block h-full w-full' : 'hidden'}>
