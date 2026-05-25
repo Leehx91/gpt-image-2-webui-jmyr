@@ -57,3 +57,22 @@ test('image API route does not send auto quality to the JmyR image gateway', () 
   assert.match(route, /normalizeImageQuality\(formData\.get\('quality'\), 'medium'\)/);
   assert.doesNotMatch(route, /const quality = \(formData\.get\('quality'\)[^;]+ \|\| 'auto';/);
 });
+
+test('JmyR image edit is capped at the verified five source images', () => {
+  const page = read('src/app/page.tsx');
+  const route = read('src/app/api/images/route.ts');
+
+  assert.match(page, /const MAX_EDIT_IMAGES = 5;/);
+  assert.match(route, /const MAX_EDIT_IMAGE_FILES = 5;/);
+  assert.match(route, /imageFiles\.length > MAX_EDIT_IMAGE_FILES/);
+});
+
+test('send-to-edit can append sources without revoking existing previews', () => {
+  const page = read('src/app/page.tsx');
+
+  assert.match(page, /setEditImageFiles\(\(prevFiles\) => \[\.\.\.prevFiles, newFile\]\)/);
+  assert.match(page, /setEditSourceImagePreviewUrls\(\(prevUrls\) => \[\.\.\.prevUrls, newPreviewUrl\]\)/);
+  assert.match(page, /editSourceImagePreviewUrlsRef/);
+  assert.match(page, /function revokeBlobUrl\(/);
+  assert.doesNotMatch(page, /editSourceImagePreviewUrls\.forEach\(\(url\) => URL\.revokeObjectURL\(url\)\)/);
+});

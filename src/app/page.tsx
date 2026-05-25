@@ -65,7 +65,13 @@ type DrawnPoint = {
     size: number;
 };
 
-const MAX_EDIT_IMAGES = 10;
+const MAX_EDIT_IMAGES = 5;
+
+function revokeBlobUrl(url: string) {
+    if (url.startsWith('blob:')) {
+        URL.revokeObjectURL(url);
+    }
+}
 
 const explicitModeClient = process.env.NEXT_PUBLIC_IMAGE_STORAGE_MODE;
 
@@ -235,6 +241,7 @@ export default function HomePage() {
     );
     const [editDrawnPoints, setEditDrawnPoints] = React.useState<DrawnPoint[]>([]);
     const [editMaskPreviewUrl, setEditMaskPreviewUrl] = React.useState<string | null>(null);
+    const editSourceImagePreviewUrlsRef = React.useRef<string[]>([]);
 
     const imageModelOptions = React.useMemo(
         () => (modelOptions.length > 0 ? modelOptions : supportedImageModelIds),
@@ -373,10 +380,24 @@ export default function HomePage() {
     }, []);
 
     React.useEffect(() => {
-        return () => {
-            editSourceImagePreviewUrls.forEach((url) => URL.revokeObjectURL(url));
-        };
+        const previousUrls = editSourceImagePreviewUrlsRef.current;
+        const currentUrls = new Set(editSourceImagePreviewUrls);
+
+        previousUrls.forEach((url) => {
+            if (!currentUrls.has(url)) {
+                revokeBlobUrl(url);
+            }
+        });
+
+        editSourceImagePreviewUrlsRef.current = editSourceImagePreviewUrls;
     }, [editSourceImagePreviewUrls]);
+
+    React.useEffect(() => {
+        return () => {
+            editSourceImagePreviewUrlsRef.current.forEach(revokeBlobUrl);
+            editSourceImagePreviewUrlsRef.current = [];
+        };
+    }, []);
 
     const readHistoryFromStorage = React.useCallback((): HistoryMetadata[] => {
         try {
@@ -456,12 +477,6 @@ export default function HomePage() {
             }
         }
     }, [history, isInitialLoad]);
-
-    React.useEffect(() => {
-        return () => {
-            editSourceImagePreviewUrls.forEach((url) => URL.revokeObjectURL(url));
-        };
-    }, [editSourceImagePreviewUrls]);
 
     React.useEffect(() => {
         const storedPref = localStorage.getItem('imageGenSkipDeleteConfirm');
@@ -1265,13 +1280,13 @@ export default function HomePage() {
             const newFile = new File([blob], filename, { type: mimeType });
             const newPreviewUrl = URL.createObjectURL(blob);
 
-            editSourceImagePreviewUrls.forEach((url) => URL.revokeObjectURL(url));
-
-            setEditImageFiles([newFile]);
-            setEditSourceImagePreviewUrls([newPreviewUrl]);
-
             if (mode === 'generate') {
+                setEditImageFiles([newFile]);
+                setEditSourceImagePreviewUrls([newPreviewUrl]);
                 setMode('edit');
+            } else {
+                setEditImageFiles((prevFiles) => [...prevFiles, newFile]);
+                setEditSourceImagePreviewUrls((prevUrls) => [...prevUrls, newPreviewUrl]);
             }
         } catch (err: unknown) {
             console.error('Error sending image to edit:', err);

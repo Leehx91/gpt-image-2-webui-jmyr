@@ -31,6 +31,7 @@ type ImageStorageMode = 'fs' | 'indexeddb';
 
 const outputDir = path.resolve(process.cwd(), 'generated-images');
 const DEFAULT_IMAGE_REQUEST_TIMEOUT_MS = 20 * 60 * 1000;
+const MAX_EDIT_IMAGE_FILES = 5;
 
 function enqueueStreamingEvent(
     controller: ReadableStreamDefaultController<Uint8Array>,
@@ -840,6 +841,14 @@ export async function POST(request: NextRequest) {
 
             if (imageFiles.length === 0) {
                 return NextResponse.json({ error: 'No image file provided for editing.' }, { status: 400 });
+            }
+
+            if (imageFiles.length > MAX_EDIT_IMAGE_FILES) {
+                const message =
+                    responseLanguage === 'en'
+                        ? `Image edit supports at most ${MAX_EDIT_IMAGE_FILES} source images.`
+                        : `图生图最多支持 ${MAX_EDIT_IMAGE_FILES} 张源图片。`;
+                return NextResponse.json({ error: message }, { status: 400 });
             }
 
             const maskFile = formData.get('mask') as File | null;
