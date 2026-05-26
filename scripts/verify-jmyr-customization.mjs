@@ -65,10 +65,17 @@ test('JmyR prompt optimizer is manual, customer-key based, and does not log prom
   assert.match(optimizer, /promptOptimizer\.generateHint/);
   assert.match(optimizer, /promptOptimizer\.editHint/);
   assert.match(optimizer, /onClick=\{handleOptimize\}/);
+  assert.match(optimizer, /onClick=\{handleIterate\}/);
+  assert.match(optimizer, /<Textarea/);
+  assert.match(optimizer, /iterateInstruction/);
   assert.match(route, /DEFAULT_PROMPT_OPTIMIZER_MODEL = 'gpt-5\.4'/);
+  assert.match(route, /MAX_ITERATE_INSTRUCTION_LENGTH = 1_000/);
   assert.match(route, /\/chat\/completions/);
   assert.match(route, /Authorization: `Bearer \$\{apiKey\}`/);
+  assert.match(route, /User adjustment/);
   assert.match(i18n, /点“优化提示词”可以补全主体、构图、光线和细节/);
+  assert.match(i18n, /这里可以直接编辑/);
+  assert.match(i18n, /继续优化/);
   assert.doesNotMatch(route, /console\.(log|warn)\(/);
   assert.doesNotMatch(route, /console\.error\([^;]*(payload|body|messages)/s);
 });

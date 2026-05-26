@@ -2,7 +2,7 @@
 
 import { ModeToggle } from '@/components/mode-toggle';
 import { PromptOptimizer } from '@/components/prompt-optimizer';
-import type { PromptOptimizationMode } from '@/components/prompt-optimizer';
+import type { PromptOptimizationRequest } from '@/components/prompt-optimizer';
 import { SizePresetPicker } from '@/components/size-preset-picker';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
@@ -59,7 +59,7 @@ type EditingFormProps = {
     isPasswordRequiredByBackend: boolean | null;
     clientPasswordHash: string | null;
     onOpenPasswordDialog: () => void;
-    onOptimizePrompt: (prompt: string, mode: PromptOptimizationMode) => Promise<string>;
+    onOptimizePrompt: (request: PromptOptimizationRequest) => Promise<string>;
     editModel: EditingFormData['model'];
     imageFiles: File[];
     sourceImagePreviewUrls: string[];

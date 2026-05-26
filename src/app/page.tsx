@@ -5,7 +5,7 @@ import { GenerationForm, type GenerationFormData } from '@/components/generation
 import { HistoryPanel } from '@/components/history-panel';
 import { ImageOutput } from '@/components/image-output';
 import { PasswordDialog } from '@/components/password-dialog';
-import type { PromptOptimizationMode } from '@/components/prompt-optimizer';
+import type { PromptOptimizationRequest } from '@/components/prompt-optimizer';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -562,8 +562,9 @@ export default function HomePage() {
     };
 
     const handleOptimizePrompt = React.useCallback(
-        async (prompt: string, promptMode: PromptOptimizationMode): Promise<string> => {
-            const trimmedPrompt = prompt.trim();
+        async (request: PromptOptimizationRequest): Promise<string> => {
+            const trimmedPrompt = request.prompt.trim();
+            const iterateInstruction = request.iterateInstruction?.trim();
             if (!trimmedPrompt) {
                 throw new Error(t('promptOptimizer.empty'));
             }
@@ -589,7 +590,8 @@ export default function HomePage() {
                 },
                 body: JSON.stringify({
                     prompt: trimmedPrompt,
-                    mode: promptMode,
+                    mode: request.mode,
+                    ...(iterateInstruction ? { iterateInstruction } : {}),
                     apiKey,
                     baseUrl,
                     responseLanguage: language,

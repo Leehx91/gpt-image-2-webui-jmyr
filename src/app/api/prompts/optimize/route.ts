@@ -17,6 +17,7 @@ type ChatCompletionResponse = {
 const DEFAULT_PROMPT_OPTIMIZER_MODEL = 'gpt-5.4';
 const PROMPT_OPTIMIZER_TIMEOUT_MS = 90_000;
 const MAX_PROMPT_LENGTH = 8_000;
+const MAX_ITERATE_INSTRUCTION_LENGTH = 1_000;
 
 function sha256(data: string): string {
     return crypto.createHash('sha256').update(data).digest('hex');
@@ -45,11 +46,52 @@ function stripOptimizerWrapper(text: string): string {
         .trim();
 }
 
-function buildMessages(prompt: string, mode: PromptOptimizationMode, language: 'en' | 'zh') {
+function buildMessages(
+    prompt: string,
+    mode: PromptOptimizationMode,
+    language: 'en' | 'zh',
+    iterateInstruction?: string
+) {
     const outputLanguage =
         language === 'zh'
             ? '优先输出中文；如果用户原提示词主要是英文，则输出英文。'
             : 'Prefer English; if the user prompt is mainly Chinese, output Chinese.';
+
+    if (iterateInstruction) {
+        const modeInstruction =
+            mode === 'edit'
+                ? [
+                      'The current prompt is already an image-to-image editing prompt.',
+                      'Revise it according to the user adjustment while preserving source-image stability language.',
+                      'Keep add/remove/replace/enhance intent explicit when relevant.'
+                  ].join('\n')
+                : [
+                      'The current prompt is already a text-to-image prompt.',
+                      'Revise it according to the user adjustment while preserving the core visual idea, subject, composition, lighting, and style continuity.'
+                  ].join('\n');
+
+        return [
+            {
+                role: 'system',
+                content: [
+                    'You are a prompt iteration assistant for a GPT-image-2 image workspace.',
+                    modeInstruction,
+                    'Make a focused revision, not a full rewrite unless the adjustment requires it.',
+                    'Do not include markdown, headings, explanations, parameter syntax, weights, or negative prompt lists.',
+                    'Output only the revised prompt body.',
+                    outputLanguage
+                ].join('\n')
+            },
+            {
+                role: 'user',
+                content: [
+                    `Current optimized prompt:\n${prompt}`,
+                    `User adjustment:\n${iterateInstruction}`,
+                    'Return the updated image prompt.'
+                ].join('\n\n')
+            }
+        ];
+    }
 
     if (mode === 'edit') {
         return [
@@ -108,6 +150,8 @@ export async function POST(request: NextRequest) {
         }
 
         const prompt = typeof payload.prompt === 'string' ? payload.prompt.trim() : '';
+        const iterateInstruction =
+            typeof payload.iterateInstruction === 'string' ? payload.iterateInstruction.trim() : '';
         const mode = payload.mode === 'edit' ? 'edit' : payload.mode === 'generate' ? 'generate' : null;
         const apiKey = typeof payload.apiKey === 'string' ? payload.apiKey.trim() : process.env.OPENAI_API_KEY?.trim();
         const baseUrl = normalizeBaseUrl(typeof payload.baseUrl === 'string' ? payload.baseUrl : undefined);
@@ -119,6 +163,9 @@ export async function POST(request: NextRequest) {
         }
         if (prompt.length > MAX_PROMPT_LENGTH) {
             return NextResponse.json({ error: 'Prompt is too long to optimize.' }, { status: 400 });
+        }
+        if (iterateInstruction.length > MAX_ITERATE_INSTRUCTION_LENGTH) {
+            return NextResponse.json({ error: 'Adjustment instruction is too long.' }, { status: 400 });
         }
         if (!apiKey) {
             return NextResponse.json({ error: 'API key not found.' }, { status: 500 });
@@ -138,7 +185,7 @@ export async function POST(request: NextRequest) {
                 },
                 body: JSON.stringify({
                     model,
-                    messages: buildMessages(prompt, mode, responseLanguage),
+                    messages: buildMessages(prompt, mode, responseLanguage, iterateInstruction || undefined),
                     stream: false
                 })
             });
