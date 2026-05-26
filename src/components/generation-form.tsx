@@ -1,6 +1,8 @@
 'use client';
 
 import { ModeToggle } from '@/components/mode-toggle';
+import { PromptOptimizer } from '@/components/prompt-optimizer';
+import type { PromptOptimizationMode } from '@/components/prompt-optimizer';
 import { SizePresetPicker } from '@/components/size-preset-picker';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
@@ -54,6 +56,7 @@ type GenerationFormProps = {
     model: GenerationFormData['model'];
     prompt: string;
     setPrompt: React.Dispatch<React.SetStateAction<string>>;
+    onOptimizePrompt: (prompt: string, mode: PromptOptimizationMode) => Promise<string>;
     n: number[];
     setN: React.Dispatch<React.SetStateAction<number[]>>;
     size: GenerationFormData['size'];
@@ -107,6 +110,7 @@ export function GenerationForm({
     model,
     prompt,
     setPrompt,
+    onOptimizePrompt,
     n,
     setN,
     size,
@@ -208,6 +212,13 @@ export function GenerationForm({
                             required
                             disabled={isLoading}
                             className='jmyr-control min-h-[84px] rounded-md text-white placeholder:text-white/40 focus:border-white/50 focus:ring-white/50'
+                        />
+                        <PromptOptimizer
+                            mode='generate'
+                            prompt={prompt}
+                            disabled={isLoading}
+                            onOptimize={onOptimizePrompt}
+                            onUsePrompt={setPrompt}
                         />
                     </div>
 

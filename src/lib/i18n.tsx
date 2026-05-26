@@ -160,6 +160,19 @@ const en = {
     'form.generate.title': 'Generate Image',
     'form.highFidelityTooltip':
         "gpt-image-2 always processes reference images at high fidelity. This improves edit quality but uses more input image tokens per request than gpt-image-1.5's default fidelity.",
+    'promptOptimizer.generateHint':
+        'A clearer prompt usually gives better images. Click Optimize Prompt to add subject, composition, lighting, and detail. This uses a small amount of text quota.',
+    'promptOptimizer.editHint':
+        'For image edits, Optimize Prompt can turn your request into clearer keep/add/remove/replace instructions. This uses a small amount of text quota.',
+    'promptOptimizer.optimize': 'Optimize Prompt',
+    'promptOptimizer.optimizing': 'Optimizing...',
+    'promptOptimizer.resultTitle': 'Optimized prompt',
+    'promptOptimizer.use': 'Use optimized prompt',
+    'promptOptimizer.stale': 'Your prompt changed after this result. Optimize again for the latest text.',
+    'promptOptimizer.applied': 'Optimized prompt applied.',
+    'promptOptimizer.failed': 'Prompt optimization failed. Please try again.',
+    'promptOptimizer.apiKeyRequired': 'Add a JmyR API Key before optimizing prompts.',
+    'promptOptimizer.empty': 'Enter a prompt before optimizing.',
     'form.qualityDescription':
         'Quality controls detail, cost, and wait time. Medium is recommended unless you need a specific tradeoff.',
     'form.sizeDescription': 'Higher resolution uses much more image quota and usually takes longer.',
@@ -514,6 +527,19 @@ const zh: Translations = {
     'form.generate.title': '生成图片',
     'form.highFidelityTooltip':
         'gpt-image-2 会始终以高保真方式处理参考图。这样能提升编辑质量，但每次请求会比 gpt-image-1.5 的默认保真度使用更多图片输入 token。',
+    'promptOptimizer.generateHint':
+        '提示词越清楚，出好图的概率越高。点“优化提示词”可以补全主体、构图、光线和细节，会消耗少量文本额度。',
+    'promptOptimizer.editHint':
+        '图生图建议把修改意图说清楚。点“优化提示词”可整理成保留、添加、删除或替换指令，会消耗少量文本额度。',
+    'promptOptimizer.optimize': '优化提示词',
+    'promptOptimizer.optimizing': '正在优化...',
+    'promptOptimizer.resultTitle': '优化后的提示词',
+    'promptOptimizer.use': '使用优化版',
+    'promptOptimizer.stale': '你已修改原提示词，如需最新版本请重新优化。',
+    'promptOptimizer.applied': '已使用优化后的提示词。',
+    'promptOptimizer.failed': '提示词优化失败，请稍后重试。',
+    'promptOptimizer.apiKeyRequired': '请先填写 JmyR API Key，再优化提示词。',
+    'promptOptimizer.empty': '请先输入提示词再优化。',
     'form.qualityDescription': '质量会影响细节、成本和等待时间。不确定时建议使用中等。',
     'form.sizeDescription': '分辨率越高，额度消耗越明显，等待时间通常也越久。',
     'form.sizeTierGroup': '1. 选择清晰度',

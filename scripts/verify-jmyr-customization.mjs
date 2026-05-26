@@ -50,6 +50,29 @@ test('image API route avoids logging prompts, request params, or uploaded filena
   assert.doesNotMatch(route, /image: `\[/);
 });
 
+test('JmyR prompt optimizer is manual, customer-key based, and does not log prompt bodies', () => {
+  const page = read('src/app/page.tsx');
+  const generationForm = read('src/components/generation-form.tsx');
+  const editingForm = read('src/components/editing-form.tsx');
+  const optimizer = read('src/components/prompt-optimizer.tsx');
+  const route = read('src/app/api/prompts/optimize/route.ts');
+  const i18n = read('src/lib/i18n.tsx');
+
+  assert.match(page, /fetch\('\/api\/prompts\/optimize'/);
+  assert.match(page, /apiKeyDraft\.trim\(\) \|\| settings\.apiKey\.trim\(\)/);
+  assert.match(generationForm, /<PromptOptimizer/);
+  assert.match(editingForm, /<PromptOptimizer/);
+  assert.match(optimizer, /promptOptimizer\.generateHint/);
+  assert.match(optimizer, /promptOptimizer\.editHint/);
+  assert.match(optimizer, /onClick=\{handleOptimize\}/);
+  assert.match(route, /DEFAULT_PROMPT_OPTIMIZER_MODEL = 'gpt-5\.4'/);
+  assert.match(route, /\/chat\/completions/);
+  assert.match(route, /Authorization: `Bearer \$\{apiKey\}`/);
+  assert.match(i18n, /点“优化提示词”可以补全主体、构图、光线和细节/);
+  assert.doesNotMatch(route, /console\.(log|warn)\(/);
+  assert.doesNotMatch(route, /console\.error\([^;]*(payload|body|messages)/s);
+});
+
 test('image API route does not send auto quality to the JmyR image gateway', () => {
   const route = read('src/app/api/images/route.ts');
 

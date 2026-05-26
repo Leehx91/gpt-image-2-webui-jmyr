@@ -5,6 +5,7 @@ import { GenerationForm, type GenerationFormData } from '@/components/generation
 import { HistoryPanel } from '@/components/history-panel';
 import { ImageOutput } from '@/components/image-output';
 import { PasswordDialog } from '@/components/password-dialog';
+import type { PromptOptimizationMode } from '@/components/prompt-optimizer';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -559,6 +560,72 @@ export default function HomePage() {
         setPasswordDialogContext('initial');
         setIsPasswordDialogOpen(true);
     };
+
+    const handleOptimizePrompt = React.useCallback(
+        async (prompt: string, promptMode: PromptOptimizationMode): Promise<string> => {
+            const trimmedPrompt = prompt.trim();
+            if (!trimmedPrompt) {
+                throw new Error(t('promptOptimizer.empty'));
+            }
+
+            const apiKey = apiKeyDraft.trim() || settings.apiKey.trim();
+            const baseUrl = baseUrlDraft.trim() || settings.baseUrl.trim();
+
+            if (!apiKey) {
+                throw new Error(t('promptOptimizer.apiKeyRequired'));
+            }
+
+            if (isPasswordRequiredByBackend && !clientPasswordHash) {
+                setError(t('page.passwordMissing'));
+                setPasswordDialogContext('initial');
+                setIsPasswordDialogOpen(true);
+                throw new Error(t('page.passwordMissing'));
+            }
+
+            const response = await fetch('/api/prompts/optimize', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({
+                    prompt: trimmedPrompt,
+                    mode: promptMode,
+                    apiKey,
+                    baseUrl,
+                    responseLanguage: language,
+                    ...(isPasswordRequiredByBackend && clientPasswordHash ? { passwordHash: clientPasswordHash } : {})
+                })
+            });
+
+            const result = (await response.json().catch(() => ({}))) as { optimizedPrompt?: unknown; error?: unknown };
+            if (response.status === 401 && isPasswordRequiredByBackend) {
+                setError(t('page.unauthorized'));
+                setPasswordDialogContext('retry');
+                setIsPasswordDialogOpen(true);
+                throw new Error(t('page.unauthorized'));
+            }
+
+            if (!response.ok) {
+                throw new Error(typeof result.error === 'string' ? result.error : t('promptOptimizer.failed'));
+            }
+
+            if (typeof result.optimizedPrompt !== 'string' || !result.optimizedPrompt.trim()) {
+                throw new Error(t('promptOptimizer.failed'));
+            }
+
+            return result.optimizedPrompt.trim();
+        },
+        [
+            apiKeyDraft,
+            baseUrlDraft,
+            clientPasswordHash,
+            isPasswordRequiredByBackend,
+            language,
+            settings.apiKey,
+            settings.baseUrl,
+            t
+        ]
+    );
 
     const getMimeTypeFromFormat = (format: string): string => {
         if (format === 'jpeg') return 'image/jpeg';
@@ -1603,6 +1670,7 @@ export default function HomePage() {
                                 model={selectedModel}
                                 prompt={genPrompt}
                                 setPrompt={setGenPrompt}
+                                onOptimizePrompt={handleOptimizePrompt}
                                 n={genN}
                                 setN={setGenN}
                                 size={genSize}
@@ -1638,6 +1706,7 @@ export default function HomePage() {
                                 maxImages={MAX_EDIT_IMAGES}
                                 editPrompt={editPrompt}
                                 setEditPrompt={setEditPrompt}
+                                onOptimizePrompt={handleOptimizePrompt}
                                 editN={editN}
                                 setEditN={setEditN}
                                 editSize={editSize}
